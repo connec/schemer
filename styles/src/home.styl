@@ -1,0 +1,34 @@
+rotate(direction)
+  p(direction)
+  animation-duration        10s
+  animation-iteration-count infinite
+  animation-name            unquote('rotate_' + direction)
+  animation-timing-function linear
+
+div#home
+  center           absolute 550px 550px
+  background-image url('../images/ring.png')
+  
+  &.spinning
+    rotate 'clockwise'
+    form#login
+      rotate 'counter_clockwise'
+  
+  &.leaving
+    animation-duration        1s
+    animation-name            zoom_fade
+    animation-timing-function ease
+      
+  form#login
+    center relative 350px 125px
+  
+  input
+    display       block
+    width         350px
+    height        25px
+    margin-bottom 10px
+    padding       5px
+    border        0
+    box-shadow    0px 0px 5px #888
+    outline       0
+    font          1.2em

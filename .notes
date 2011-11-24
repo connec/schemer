@@ -1,0 +1,14 @@
+The application should be 'human readable' from the ground up, meaning all
+languages used should be recent ones at the forefront of elegant language design
+e.g.:
+  CoffeeScript
+  Jade
+  Stylus
+
+However, particularly with the above languages (all implemented for CommonJS),
+compilation is an issue.  E.g., during debugging, everything should rebuild
+every time the browser is refreshed, whilst in production everything should be
+precompiled.
+
+The browser needs to load a page, meaning the layout must be compiled server-
+side if it's written in Jade etc.

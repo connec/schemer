@@ -1,0 +1,49 @@
+@import 'nib'
+
+@keyframes rotate_clockwise
+  from
+    transform rotate(0deg)
+  to
+    transform rotate(360deg)
+
+@keyframes rotate_counter_clockwise
+  from
+    transform rotate(360deg)
+  to
+    transform rotate(0deg)
+
+@keyframes zoom_fade
+  from
+    opacity   1
+    transform scale(1)
+  to
+    opacity   0
+    transform scale(3)
+
+global-reset()
+
+font(size = 10pt, family = null)
+  if family is null
+    font size 'Lucida Sans Unicode', 'Lucida Sans', Lucida, sans-serif
+  else
+    font size family
+
+center(position, width, height)
+  position    left 50% top 50%
+  width       width
+  height      height
+  margin-left (-(width / 2))
+  margin-top  (-(height / 2))
+
+color_background = white
+color_text       = #333
+
+body
+  background-color color_background
+  color            color_text
+  font()
+
+.template
+  display none
+
+@import 'home'
