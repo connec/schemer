@@ -1,5 +1,3 @@
-[90minspect:[0m 'clockwise'
-[90minspect:[0m 'counter_clockwise'
 html,
 body,
 div,
@@ -26,7 +24,6 @@ code,
 del,
 dfn,
 em,
-font,
 img,
 ins,
 kbd,
@@ -93,12 +90,9 @@ a img {
   border: none;
 }
 body {
-  background-color: #fff;
+  backgroud-color: #fff;
   color: #333;
   font: 10pt 'Lucida Sans Unicode', 'Lucida Sans', Lucida, sans-serif;
-}
-.template {
-  display: none;
 }
 div#home {
   position: absolute;
@@ -165,9 +159,9 @@ div#home input {
   margin-bottom: 10px;
   padding: 5px;
   border: 0;
-  -webkit-box-shadow: 0px 0px 5px #888;
-  -moz-box-shadow: 0px 0px 5px #888;
-  box-shadow: 0px 0px 5px #888;
+  -webkit-box-shadow: 0 0 5px #888;
+  -moz-box-shadow: 0 0 5px #888;
+  box-shadow: 0 0 5px #888;
   outline: 0;
   font: 1.2em 'Lucida Sans Unicode', 'Lucida Sans', Lucida, sans-serif;
 }
@@ -386,4 +380,3 @@ div#home input {
     transform: scale(3);
   }
 }
-

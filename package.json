@@ -1,0 +1,19 @@
+{
+  "name"        : "honours",
+  "description" : "My 4th year Honours project - a database management application",
+  "author"      : "Chris Connelly",
+  "version"     : "0.0.1-pre",
+  "dependencies": {
+    "backbone"      : ">= 0.5.3",
+    "coffee-script" : ">= 1.2.0",
+    "jade"          : ">= 0.20.0",
+    "nib"           : ">= 0.3.1",
+    "stylus"        : ">= 0.21.2",
+    "underscore"    : ">= 1.2.3",
+    "yaml-js"       : ">= 0.0.2",
+    "zappa"         : ">= 0.3.3"
+  },
+  "devDependencies": {
+    "squash": ">= 0.0.8"
+  }
+}
