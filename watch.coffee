@@ -1,3 +1,4 @@
+build        = require './build'
 coffeescript = require 'coffee-script'
 fs           = require 'fs'
 jade         = require 'jade'
@@ -42,48 +43,18 @@ fs.watch 'server', (event) ->
   , 50
 
 # Watch the client/scripts directory for changes
-script_path  = 'client/scripts/app'
-
-squash = new Squash
-  cwd: 'client/scripts'
-  extensions:
-    '.coffee': (file) ->
-      coffeescript.compile fs.readFileSync file, 'utf8'
-    '.jade': (file) ->
-      result = '''
-        var jade = global.jade_runtime;
-        module.exports = 
-      '''
-      result += String jade.compile fs.readFileSync(file, 'utf8'),
-        client: true
-        filename: file
-      result += ';'
-      return result
-  relax: (name, from) ->
-    console.log "Could not find module `#{name}` from `#{from}`"
-  requires: {'./app.coffee': 'app'}
-
+squash = new Squash build.squash_options
 squash.watch (err, js) ->
   if err
     console.log String err
     return
-  fs.writeFileSync "#{script_path}.js", js
-  console.log "Rebuilt #{script_path}"
+  fs.writeFileSync "#{build.script}.js", js
+  console.log "Rebuilt #{build.script}"
 
 # Watch the client/styles directory for stylus file changes
-style_path  = 'client/styles/app'
 style_skip  = true
-
 compile_style = ->
-  styl = fs.readFileSync "#{style_path}.styl", 'utf8'
-  css  = stylus(styl).set('filename', "#{style_path}.styl").use nib()
-  css.render (err, css) ->
-    if err
-      console.log String err
-      return
-    fs.writeFileSync "#{style_path}.css", css
-    console.log "Rebuilt #{style_path}"
-  
+  build.build_style()
   setTimeout ->
     style_skip = false
   , 50

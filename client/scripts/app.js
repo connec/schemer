@@ -37,11 +37,12 @@
             }
         }
     };
-    error = function(name, from) {
-        return console.log("Could not find module `" + name + "` from `" + from + "`");
+    error = function(file, from) {
+        return console.log("  Could not find module `" + file + "` from `" + from + "`");
     };
     register({
-        "": [ "./vendor/jade_runtime" ]
+        "": [ "./vendor/jade_runtime" ],
+        "views\\templates": [ "../../vendor/jade_runtime" ]
     }, "vendor", function(global, module, exports, require, window) {
         if (!Array.isArray) {
             Array.isArray = function(arr) {
@@ -7240,7 +7241,7 @@
     register({
         views: [ "./templates/home" ]
     }, "views\\templates", function(global, module, exports, require, window) {
-        var jade = global.jade_runtime;
+        var jade = require("../../vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
             var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
             var __jade = [ {

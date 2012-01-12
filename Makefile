@@ -1,12 +1,10 @@
-build: build-client
-
-build-client:
-	cd client && node ../node_modules/squash/bin/cli.js --coffee -f scripts/app.js -r ./scripts/app.coffee=app
+build:
+	coffee build.coffee
 
 server:
-	coffee server/server.coffee
+	coffee server/zapp.coffee
 
 watch:
-	cd client && node ../node_modules/squash/bin/cli.js --coffee -f scripts/app.js -r -w ./scripts/app.coffee=app
+	coffee watch.coffee
 
-.PHONY: server
+.PHONY: build server watch

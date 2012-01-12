@@ -58,4 +58,4 @@ zapp.stop = (callback) ->
   @app.close()
 
 # Start the server if this module's been called directly
-@zapp.start() if require.main == module
+zapp.start() if require.main == module
