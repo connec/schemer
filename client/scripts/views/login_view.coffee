@@ -1,6 +1,7 @@
-Backbone = global.Backbone
+BaseView   = require './base_view'
+ServerView = require './server_view'
 
-module.exports = class LoginView extends Backbone.View
+module.exports = class LoginView extends BaseView
   # Load the home template
   template: require './templates/login'
   
@@ -8,19 +9,9 @@ module.exports = class LoginView extends Backbone.View
   events:
     'keypress input' : 'login'
   
-  # Construct the view
-  constructor: ->
-    # Create an element from the template
-    @el = $(@template()).fadeTo 0, 0
-    super
-  
-  # 'Initialize' the view after construction
-  initialize: ->
-    @render()
-  
   # Render the element to the page
   render: ->
-    $(document.body).html('').append @el.fadeTo 250, 1
+    $(document.body).html('').append @el
   
   # Attempt to log in to the server
   login: (event) ->
@@ -40,19 +31,29 @@ module.exports = class LoginView extends Backbone.View
       user     : @$('input[name="user"]').val()
       password : @$('input[name="password"]').val()
     
-    global.socket.once 'success', =>
-      old_overflow = $(document.body).css 'overflow'
+    # Add the socket callbacks
+    global.socket.once 'success', @login_success.bind @
+    global.socket.once 'error', @login_error.bind @
+    
+    # Emit the login event to the server
+    global.socket.emit 'login', data
+  
+  # What to do after a successful login
+  login_success: ->
+    old_overflow = $('body').css 'overflow'
+    
+    new_view = new ServerView =>
       $(document.body).css 'overflow', 'hidden'
       @$('#ring').css '-webkit-animation-play-state', 'paused'
-      @el.bind 'webkitAnimationEnd', =>
-        @el.remove()
-        $(document.body).css 'overflow', old_overflow
-        global.router.navigate '/server', true
       @el.addClass 'leaving'
     
-    global.socket.once 'error', (msg) =>
-      @$('#ring').css '-webkit-animation-play-state', 'paused'
-      @$('input').removeAttr 'disabled'
-      @$('#message').text(msg).css 'top', - @$('#message').outerHeight()
-      
-    global.socket.emit 'login', data
+    @el.bind 'webkitAnimationEnd', =>
+      $(document.body).css 'overflow', old_overflow
+      global.router.navigate '/server'
+      new_view.fade_in()
+  
+  # What to do after a login error
+  login_error: (msg) ->
+    @$('#ring').css '-webkit-animation-play-state', 'paused'
+    @$('input').removeAttr 'disabled'
+    @$('#message').text(msg).css 'top', - @$('#message').outerHeight()

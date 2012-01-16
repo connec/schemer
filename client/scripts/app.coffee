@@ -23,10 +23,13 @@ class Router extends Backbone.Router
     check_login -> global.router.navigate '/server', true
   
   login: ->
-    new LoginView
+    view = new LoginView
+    view.fade_in()
   
   server: ->
-    check_login -> new ServerView
+    check_login ->
+      view = new ServerView ->
+        view.fade_in()
 
 jQuery =>
   global.socket = io.connect()

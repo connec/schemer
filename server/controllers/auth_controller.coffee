@@ -17,16 +17,14 @@ module.exports = class AuthController extends BaseController
   Authenticates the user with the database.
   ###
   login: ->
-    setTimeout =>
-      # Create a DB client with the given credentials
-      db = mysql.createClient @request.data
+    # Create a DB client with the given credentials
+    db = mysql.createClient @request.data
+    
+    # Attempt to log in with given credentials
+    db.query 'SHOW DATABASES', (err) =>
+      return @request.emit 'error', String err if err
       
-      # Attempt to log in with given credentials
-      db.query 'SHOW DATABASES', (err) =>
+      @request.session.credentials = @request.data
+      @request.session.save (err) =>
         return @request.emit 'error', String err if err
-        
-        @request.session.credentials = @request.data
-        @request.session.save (err) =>
-          return @request.emit 'error', String err if err
-          return @request.emit 'success'
-    , 1000
+        return @request.emit 'success'
