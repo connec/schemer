@@ -1,11 +1,6 @@
 build        = require './build'
-coffeescript = require 'coffee-script'
 fs           = require 'fs'
-jade         = require 'jade'
-nib          = require 'nib'
-path         = require 'path'
 {Squash}     = require 'squash'
-stylus       = require 'stylus'
 zapp         = require './server/zapp'
 
 # The port to listen on

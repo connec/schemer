@@ -15,7 +15,7 @@ util     = require 'util'
 @script = 'client/scripts/app'
 
 # The absolute path to the Jade runtime
-@jade_runtime = path.resolve './client/scripts/vendor/jade_runtime'
+@jade_runtime = path.resolve './client/scripts/lib/vendor/jade_runtime'
 
 # Options to use with Squash when building the script
 @squash_options =
@@ -48,7 +48,7 @@ util     = require 'util'
   
   # A method to call when missing dependencies are encountered
   relax: (file, from) ->
-    console.log "  Could not find module `#{file}` from `#{from}`"
+    console.log String new Error "Could not find module `#{file}` from `#{from}`"
   
   # The files to require initially (just the main script)
   requires: { './app.coffee' : 'app' }
