@@ -241,8 +241,8 @@
                     ServerView.__super__.constructor.apply(this, arguments);
                 }
                 ServerView.prototype.initialize = function() {
-                    var server, _this = this;
-                    server = {
+                    var _this = this;
+                    this.server = {
                         name: "host",
                         id: "host",
                         data: {},
@@ -250,18 +250,18 @@
                     };
                     return query("show databases", function(err, results) {
                         if (err != null) throw err;
-                        return async.forEachSeries(results, function(result, callback) {
+                        return async.forEachSeries(results, function(result, next_database) {
                             var database;
                             database = {
                                 name: result.Database,
-                                id: "" + server.id + "_" + result.Database,
+                                id: "" + _this.server.id + "_" + result.Database,
                                 data: {},
                                 children: []
                             };
-                            server.children.push(database);
+                            _this.server.children.push(database);
                             return query("show tables", database.name, function(err, results) {
-                                if (err != null) callback(err);
-                                return async.forEachSeries(results, function(result, callback) {
+                                if (err != null) next_database(err);
+                                return async.forEachSeries(results, function(result, next_table) {
                                     var table;
                                     table = {
                                         name: result["Tables_in_" + database.name],
@@ -272,7 +272,7 @@
                                     database.children.push(table);
                                     return query("describe " + table.name, database.name, function(err, results) {
                                         var field, result, _i, _len;
-                                        if (err) callback(err);
+                                        if (err) next_table(err);
                                         for (_i = 0, _len = results.length; _i < _len; _i++) {
                                             result = results[_i];
                                             field = {
@@ -283,15 +283,14 @@
                                             };
                                             table.children.push(field);
                                         }
-                                        return callback();
+                                        return next_table();
                                     });
                                 }, function() {
-                                    return callback();
+                                    return next_database();
                                 });
                             });
                         }, function(err) {
                             if (err != null) throw err;
-                            global.server = server;
                             return _this.on_loaded();
                         });
                     });
@@ -301,54 +300,86 @@
                     return this.render_graph();
                 };
                 ServerView.prototype.render_graph = function() {
-                    var tree;
+                    var div, set_label_text, tree;
+                    div = $("<div></div>").css({
+                        position: "absolute",
+                        left: -1e3,
+                        fontFamily: "Lucida Console",
+                        fontSize: "0.8em"
+                    }).prependTo("body");
+                    set_label_text = function(element, node) {
+                        var ratio;
+                        div.text(node.name);
+                        if ((ratio = 140 / div.width()) < 1) {
+                            element.title = node.name;
+                            return element.textContent = node.name.slice(0, Math.floor(ratio * node.name.length) - 3) + "...";
+                        } else {
+                            return element.textContent = node.name;
+                        }
+                    };
                     tree = new $jit.ST({
                         injectInto: "graph",
                         duration: 500,
                         transition: $jit.Trans.Quart.easeInOut,
                         levelDistance: 50,
+                        levelsToShow: 1,
                         Navigation: {
                             enable: true,
                             panning: true
-                        },
-                        Node: {
-                            width: 150,
-                            height: 25,
-                            type: "rectangle",
-                            color: "#aaa",
-                            overridable: true
                         },
                         Edge: {
                             type: "bezier",
                             overridable: true
                         },
+                        Node: {
+                            width: 150,
+                            height: 25,
+                            type: "rectangle",
+                            color: "#ccc",
+                            overridable: true
+                        },
                         onCreateLabel: function(element, node) {
+                            var style;
                             element.id = node.id;
-                            element.innerHTML = node.name;
+                            set_label_text(element, node);
+                            style = element.style;
+                            style.width = "150px";
+                            style.lineHeight = "30px";
+                            style.color = "#333";
+                            style.cursor = "pointer";
+                            style.fontFamily = "Lucida Console";
+                            style.fontSize = "0.8em";
+                            style.textAlign = "center";
                             return element.onclick = function() {
+                                var nodes, tree_node;
+                                nodes = [];
+                                tree_node = tree.graph.getNode(node.id);
+                                tree.graph.eachNode(function(subnode) {
+                                    if (!(subnode._depth === node._depth && subnode.id !== node.id)) {
+                                        return;
+                                    }
+                                    if (!tree.graph.getNode(subnode.id).getParents().length) return;
+                                    if (!tree.graph.getNode(subnode.id).getParents()[0].selected) return;
+                                    return nodes.push(subnode.id);
+                                });
+                                tree.op.removeNode(nodes, {
+                                    duration: 250,
+                                    hideLabels: false,
+                                    type: "fade:con"
+                                });
                                 return tree.onClick(node.id);
                             };
                         },
-                        onPlaceLabel: function(element, node) {
-                            var style;
-                            style = element.style;
-                            style.width = "150px";
-                            style.lineHeight = "25px";
-                            style.color = "#333";
-                            style.cursor = "pointer";
-                            style.fontSize = "0.8em";
-                            return style.textAlign = "center";
-                        },
                         onBeforePlotNode: function(node) {
                             if (node.selected) {
-                                return node.data.$color = "#888";
+                                return node.data.$color = "#aaa";
                             } else {
                                 return delete node.data.$color;
                             }
                         },
                         onBeforePlotLine: function(edge) {
                             if (edge.nodeFrom.selected && edge.nodeTo.selected) {
-                                edge.data.$color = "#888";
+                                edge.data.$color = "#aaa";
                                 return edge.data.$lineWidth = 3;
                             } else {
                                 delete edge.data.$color;
@@ -356,9 +387,11 @@
                             }
                         }
                     });
-                    tree.loadJSON(global.server);
+                    tree.loadJSON(this.server);
                     tree.compute();
-                    return tree.onClick(tree.root);
+                    tree.onClick(tree.root);
+                    global.tree = tree;
+                    return div.remove();
                 };
                 return ServerView;
             }(BaseView);
