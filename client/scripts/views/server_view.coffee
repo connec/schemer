@@ -20,7 +20,7 @@ module.exports = class ServerView extends BaseView
     
     # Get the databases on the server
     query 'show databases', (err, results) =>
-      throw err if err?
+      return console.log String err if err?
       async.forEachSeries results, (result, next_database) =>
         database =
           name     : result.Database
@@ -31,7 +31,7 @@ module.exports = class ServerView extends BaseView
         
         # Get the tables in the database
         query 'show tables', database.name, (err, results) ->
-          next_database err if err?
+          return next_database err if err?
           async.forEachSeries results, (result, next_table) ->
             table =
               name     : result["Tables_in_#{database.name}"]
@@ -42,7 +42,7 @@ module.exports = class ServerView extends BaseView
             
             # Get the fields in the table
             query "describe #{table.name}", database.name, (err, results) ->
-              next_table err if err
+              return next_table err if err
               for result in results
                 field =
                   name     : result.Field
@@ -54,7 +54,7 @@ module.exports = class ServerView extends BaseView
           , ->
             next_database()
       , (err) =>
-        throw err if err?
+        return console.log String err if err?
         @on_loaded()
   
   # Render the element to the page
