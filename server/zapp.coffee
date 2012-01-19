@@ -31,9 +31,6 @@ module.exports = zapp = zappa.app ->
       key    : 'sid'
       secret : 'demhonours'
       store  : session_store
-    
-    # Attach a database client for each request
-    'database'
   }
   
   # Reduce the log level to get rid of constant debugger messages
