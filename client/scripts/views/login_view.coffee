@@ -1,4 +1,5 @@
 BaseView   = require './base_view'
+Server     = require '../models/server'
 ServerView = require './server_view'
 
 module.exports = class LoginView extends BaseView
@@ -19,7 +20,7 @@ module.exports = class LoginView extends BaseView
     return unless event.charCode is 13
     
     # Clear any previous errors
-    @$('#message').text('');
+    @$('#message').text('')
     
     # Start the ring's spinning animation
     @$('input').blur().attr 'disabled', 'disabled'
@@ -31,29 +32,30 @@ module.exports = class LoginView extends BaseView
       user     : @$('input[name="user"]').val()
       password : @$('input[name="password"]').val()
     
-    # Add the socket callbacks
-    global.socket.once 'success', @login_success.bind @
-    global.socket.once 'error', @login_error.bind @
-    
-    # Emit the login event to the server
-    global.socket.emit 'login', data
-  
-  # What to do after a successful login
-  login_success: ->
-    old_overflow = $('body').css 'overflow'
-    
-    new_view = new ServerView =>
-      $(document.body).css 'overflow', 'hidden'
-      @$('#ring').css '-webkit-animation-play-state', 'paused'
-      @el.addClass 'leaving'
-    
-    @el.bind 'webkitAnimationEnd', =>
-      $(document.body).css 'overflow', old_overflow
-      global.router.navigate '/server'
-      new_view.fade_in()
-  
-  # What to do after a login error
-  login_error: (msg) ->
-    @$('#ring').css '-webkit-animation-play-state', 'paused'
-    @$('input').removeAttr 'disabled'
-    @$('#message').text(msg).css 'top', - @$('#message').outerHeight()
+    # Make the socket request
+    global.socket.request 'login', data, (err) =>
+      if err
+        # If there's an error, stop the animation and display it
+        @$('#ring').css '-webkit-animation-play-state', 'paused'
+        @$('input').removeAttr 'disabled'
+        @$('#message').text(String err).css 'top', -@$('#message').outerHeight()
+        return
+      
+      # Initialise the server object
+      global.server = new Server name: data.host
+      
+      # Save the body's overflow property for later
+      old_overflow = $('body').css 'overflow'
+      
+      # Instantiate the Server view, and set the on_loaded callback
+      new_view = new ServerView =>
+        # Stop the spinning and start the leaving animation
+        $('body').css 'overflow', 'hidden'
+        @$('#ring').css '-webkit-animation-play-state', 'paused'
+        @el.addClass 'leaving'
+      
+      # Fade in the new view when the leaving animation ends
+      @el.bind 'webkitAnimationEnd', =>
+        $('body').css 'overflow', old_overflow
+        global.router.navigate ''
+        new_view.fade_in()

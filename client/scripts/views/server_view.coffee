@@ -1,6 +1,6 @@
 $jit     = global.$jit
 BaseView = require './base_view'
-query    = require '../lib/query'
+Server   = require '../models/server'
 
 module.exports = class ServerView extends BaseView
   # Load the server template
@@ -12,50 +12,9 @@ module.exports = class ServerView extends BaseView
   
   # Build the server tree for the visualisation
   initialize: ->
-    @server =
-      name     : 'host'
-      id       : 'host'
-      data     : {}
-      children : []
-    
-    # Get the databases on the server
-    query 'show databases', (err, results) =>
-      return console.log String err if err?
-      async.forEachSeries results, (result, next_database) =>
-        database =
-          name     : result.Database
-          id       : "#{@server.id}_#{result.Database}"
-          data     : {}
-          children : []
-        @server.children.push database
-        
-        # Get the tables in the database
-        query 'show tables', database.name, (err, results) ->
-          return next_database err if err?
-          async.forEachSeries results, (result, next_table) ->
-            table =
-              name     : result["Tables_in_#{database.name}"]
-              id       : "#{database.id}_#{result["Tables_in_#{database.name}"]}"
-              data     : {}
-              children : []
-            database.children.push table
-            
-            # Get the fields in the table
-            query "describe #{table.name}", database.name, (err, results) ->
-              return next_table err if err
-              for result in results
-                field =
-                  name     : result.Field
-                  id       : "#{table.id}_#{result.Field}"
-                  data     : {}
-                  children : []
-                table.children.push field
-              next_table()
-          , ->
-            next_database()
-      , (err) =>
-        return console.log String err if err?
-        @on_loaded()
+    global.server.fetch_children (err) =>
+      return console.log String err if err
+      @on_loaded()
   
   # Render the element to the page
   render: ->
@@ -121,22 +80,41 @@ module.exports = class ServerView extends BaseView
         style.textAlign  = 'center'
         
         element.onclick = ->
-          nodes = []
-          tree_node = tree.graph.getNode node.id
-          tree.graph.eachNode (subnode) ->
-            return unless subnode._depth == node._depth and subnode.id != node.id
-            return unless tree.graph.getNode(subnode.id).getParents().length
-            return unless tree.graph.getNode(subnode.id).getParents()[0].selected
-            nodes.push subnode.id
-          
-          tree.op.removeNode nodes,
-            duration   : 250
-            hideLabels : false
-            type       : 'fade:con'
-          tree.onClick node.id
+          async.series [
+            (finished) ->
+              nodes = []
+              tree.graph.eachNode (subnode) ->
+                return unless subnode._depth == node._depth and subnode.id != node.id
+                return unless tree.graph.getNode(subnode.id).getParents().length
+                return unless tree.graph.getNode(subnode.id).getParents()[0].selected
+                nodes.push subnode.id
+              tree.op.removeNode nodes,
+                duration   : 250
+                hideLabels : false
+                type       : 'fade:con'
+                onComplete : -> finished()
+            (finished) ->
+              tree_node = tree.graph.getNode node.id
+              return finished() if tree_node.model.get('children').length
+              tree_node.model.fetch_children (err) ->
+                return finished err if err
+                tree.addSubtree tree_node.model.get_graph_json(), 'animate',
+                  hideLabels : false
+                  onComplete : -> finished()
+          ], (err) ->
+            return console.log String err if err
+            tree.onClick node.id
       
       # Set node properties before they are drawn
-      onBeforePlotNode : (node) ->
+      onBeforePlotNode : (node) =>
+        # Find the model for this node
+        node.model = global.server
+        parts = node.id.split(/\//g)[2...]
+        while parts.length
+          node.model = node.model.get('children').find (child) ->
+            child.get('name') == parts[0]
+          parts.shift()
+        
         if node.selected
           node.data.$color = '#aaa'
         else
@@ -152,7 +130,7 @@ module.exports = class ServerView extends BaseView
           delete edge.data.$lineWidth
     
     # Load the data
-    tree.loadJSON @server
+    tree.loadJSON global.server.get_graph_json()
     tree.compute()
     tree.onClick tree.root
     global.tree = tree

@@ -1,7 +1,8 @@
 {MemoryStore} = require('express').session
+mysql         = require 'mysql'
 {parseCookie} = require('connect').utils
 {Session}     = require('connect').middleware.session
-yamljs        = require 'yaml-js'
+util          = require 'util'
 zappa         = require 'zappa'
 
 # Instantiate the Zappa server
@@ -9,9 +10,6 @@ module.exports = zapp = zappa.app ->
   session_store = new MemoryStore()
   
   @set {
-    # Use the `templates` directory for views (they're not the same as backbone views)
-    'views': "#{__dirname}/templates"
-    
     # Use Jade for templating
     'view engine': 'jade'
   }
@@ -34,58 +32,110 @@ module.exports = zapp = zappa.app ->
   }
   
   # Reduce the log level to get rid of constant debugger messages
-  @io.set 'log level', 2
+  @io.set 'log level', 3
   
   # Check the client has a valid session when authorizing a socket
   @io.set 'authorization', (data, accept) ->
+    # Check a cookie actually exists
     unless data.headers.cookie
       return accept 'No cookie transmitted', false
     
+    # Gather relevant session data
     data.cookie       = parseCookie data.headers.cookie
     data.sessionID    = data.cookie.sid
     data.sessionStore = session_store
+    
+    # Load the session
     session_store.get data.sessionID, (err, session) ->
-      unless session and not err
-        return accept 'Error retrieving session', false
+      return accept 'Error retrieving session', false if err
       
       data.session = new Session data, session
       accept null, true
   
-  # Dispatches a request to the appropriate controller
-  dispatch = ->
-    try
-      # Copy the `socket.handshake.session` object to `session` if this is a socket
-      @session = @socket.handshake.session if @socket?
+  # Handles 'socket requests'
+  @on request: ->
+    console.log "   debug - received request #{util.inspect @data}"
+    {id, request, request_data} = @data
+    @session                    = @socket.handshake.session
+    
+    callback = (err, result) =>
+      @emit "response_#{id}", {err, result}
+    
+    switch request
+      when 'login'
+        # Attempt to log in to the database server with given credentials
+        db = mysql.createClient request_data
+        db.query 'show databases', (err) =>
+          return callback err if err
+          @session.credentials = request_data
+          @session.save (err) =>
+            return callback err if err
+            callback null, null
+        db.end()
       
-      # Initialise the controller with the request context object
-      Controller = require "./controllers/#{@params.controller}_controller"
-      controller = new Controller @
+      when 'check_login'
+        # See if the client is logged in
+        if @session.credentials?
+          callback null, 
+            host : @session.credentials.host
+            user : @session.credentials.user
+        else
+          callback null, false
       
-      # Execute the controller
-      controller.execute()
-    catch err
-      console.log err.stack
-  
-  # Load the routes
-  for verb, routes of require('./configs/routes').shift()
-    for path, default_params of routes
-      do (default_params) =>
-        # Check there's a `controller` parameter somewhere
-        unless default_params.controller? or path.match /:controller(?:\/|$)/
-          throw new Error "no `controller` parameter for path `#{path}`"
+      when 'get_databases'
+        # Get an array of database on the server
+        db = mysql.createClient @session.credentials
+        db.query 'show databases', (err, results) ->
+          return callback err if err
+          callback null, (result.Database for result in results)
+        db.end()
+      
+      when 'get_tables'
+        # Get an array of tables in a database
+        {database} = request_data
         
-        # Create the route
-        route = {}
-        route[path] = ->
-          # Create `@params` if this is a socket callback
-          @params = {} unless @params?
-          
-          # Copy the default parameters into the `params` object
-          (@params[k] = v unless @params[k]?) for k, v of default_params
-          
-          # Dispatch this request
-          dispatch.call @
-        @[verb] route
+        db = mysql.createClient @session.credentials
+        db.query "use #{database}"
+        db.query 'show tables', (err, results) ->
+          return callbck err if err
+          callback null, (result["Tables_in_#{database}"] for result in results)
+        db.end()
+      
+      when 'get_fields'
+        # Get an array of fields in a table
+        console.log request
+      
+      when 'save_table'
+        # Save the current properties of a table to the database
+        console.log request
+      
+      else
+        throw new Error "cannot handle request: #{request}"
+  
+  # The only HTTP response - renders the layout
+  @get '/' : ->
+    @render 'layout', layout: false
+  
+  # The layout for the application
+  @view layout: '''
+    doctype 5
+    html
+      head
+        meta(charset='utf-8')
+        
+        title Honours
+        
+        link(href='styles/app.css', rel='stylesheet')
+        script(src='/scripts/lib/vendor/jquery.js')
+        script(src='/scripts/lib/vendor/underscore.js')
+        script(src='/scripts/lib/vendor/backbone.js')
+        script(src='/scripts/lib/vendor/socket.io.js')
+        script(src='/scripts/lib/vendor/async.js')
+        script(src='/scripts/lib/vendor/jit.js')
+        script(src='scripts/app.js')
+      
+      body
+  '''
 
 # Attach a method to start the server
 zapp.start = (port = 3000) ->

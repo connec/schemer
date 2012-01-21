@@ -1,5 +1,3 @@
-Backbone = global.Backbone
-
 ###
 The Base view contains common funcitonality for views.
 ###
