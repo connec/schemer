@@ -24,21 +24,19 @@ module.exports = class ServerView extends BaseView
   # Render the graph
   render_graph: ->
     # Create a div for measuring label names
-    div = $('<div></div>').css(
-      position   : 'absolute'
-      left       : -1000
-      fontFamily : 'Lucida Console'
-      fontSize   : '0.8em'
-    ).prependTo 'body';
+    ruler = @$('#ruler')
     
     # Shorten a node's name inline with the node width
     set_label_text = (element, node) ->
-      div.text node.name
-      if (ratio = 140 / div.width()) < 1
+      ruler.text node.name
+      if (ratio = 140 / ruler.width()) < 1
         element.title       = node.name
         element.textContent = node.name.slice(0, Math.floor(ratio * node.name.length) - 3) + '...'
       else
         element.textContent = node.name
+    
+    # Track the currently selected level in the tree
+    current_level = 0
     
     # Create a spacetree visualisation
     tree = new $jit.ST
@@ -80,31 +78,43 @@ module.exports = class ServerView extends BaseView
         style.textAlign  = 'center'
         
         element.onclick = ->
-          async.series [
-            (finished) ->
-              nodes = []
-              tree.graph.eachNode (subnode) ->
-                return unless subnode._depth == node._depth and subnode.id != node.id
-                return unless tree.graph.getNode(subnode.id).getParents().length
-                return unless tree.graph.getNode(subnode.id).getParents()[0].selected
-                nodes.push subnode.id
-              tree.op.removeNode nodes,
-                duration   : 250
-                hideLabels : false
-                type       : 'fade:con'
-                onComplete : -> finished()
-            (finished) ->
-              tree_node = tree.graph.getNode node.id
-              children  = tree_node.model.get 'children'
-              return finished() unless children? and children.length is 0
-              tree_node.model.fetch_children (err, children) ->
-                return finished err if err
+          return if node._depth == tree.clickedNode._depth
+          
+          # If we're moving deeper in the tree...
+          if node._depth > tree.clickedNode._depth
+            async.series [
+              (finished) ->
+                nodes = []
+                tree.graph.eachNode (subnode) ->
+                  return unless subnode._depth == node._depth and subnode.id != node.id
+                  return unless tree.graph.getNode(subnode.id).getParents().length
+                  return unless tree.graph.getNode(subnode.id).getParents()[0].selected
+                  nodes.push subnode.id
+                tree.op.removeNode nodes,
+                  duration   : 250
+                  hideLabels : false
+                  type       : 'fade:con'
+                  onComplete : -> finished()
+              (finished) ->
+                tree_node = tree.graph.getNode node.id
+                children  = tree_node.model.get 'children'
+                return finished() unless children? and children.length is 0
+                tree_node.model.fetch_children (err, children) ->
+                  return finished err if err
+                  tree.addSubtree tree_node.model.get_graph_json(), 'animate',
+                    hideLabels : false
+                    onComplete : -> finished()
+            ], (err) ->
+              return console.log String err if err
+              current_level = node._depth
+              tree.onClick node.id
+          # Else, we're moving backwards...
+          else
+            tree_node = tree.graph.getNode node.id
+            tree.onClick node.id,
+              onComplete: ->
                 tree.addSubtree tree_node.model.get_graph_json(), 'animate',
                   hideLabels : false
-                  onComplete : -> finished()
-          ], (err) ->
-            return console.log String err if err
-            tree.onClick node.id
       
       # Set node properties before they are drawn
       onBeforePlotNode : (node) =>
@@ -135,6 +145,3 @@ module.exports = class ServerView extends BaseView
     tree.compute()
     tree.onClick tree.root
     global.tree = tree
-    
-    # Remove the measuring div
-    div.remove()

@@ -23,9 +23,15 @@ module.exports = class GraphModel extends Backbone.Model
   ###
   Returns a JIT compatible representation of this model and its children.
   ###
-  get_graph_json: ->
+  get_graph_json: (depth = 1) ->
+    children = @get 'children'
     {
       id       : @get 'id'
       name     : @get 'name'
-      children : @get('children')?.map (child) -> child.get_graph_json()
+      children : if depth and children?
+          depth--
+          children.map (child) ->
+            child.get_graph_json depth
+        else
+          []
     }
