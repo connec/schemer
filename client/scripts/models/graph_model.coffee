@@ -10,7 +10,7 @@ module.exports = class GraphModel extends Backbone.Model
     super
     @set
       id       : "#{@get('parent')?.get('id') ? ''}/#{@get 'name'}"
-      children : new @Children @
+      children : if @Children? then new @Children @ else null
   
   ###
   Loads this model's children from the database.
@@ -27,5 +27,5 @@ module.exports = class GraphModel extends Backbone.Model
     {
       id       : @get 'id'
       name     : @get 'name'
-      children : @get('children').map (child) -> child.get_graph_json()
+      children : @get('children')?.map (child) -> child.get_graph_json()
     }

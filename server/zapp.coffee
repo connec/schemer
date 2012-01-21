@@ -87,7 +87,7 @@ module.exports = zapp = zappa.app ->
         db = mysql.createClient @session.credentials
         db.query 'show databases', (err, results) ->
           return callback err if err
-          callback null, (result.Database for result in results)
+          callback null, ({name : result.Database} for result in results)
         db.end()
       
       when 'get_tables'
@@ -97,13 +97,36 @@ module.exports = zapp = zappa.app ->
         db = mysql.createClient @session.credentials
         db.query "use #{database}"
         db.query 'show tables', (err, results) ->
-          return callbck err if err
-          callback null, (result["Tables_in_#{database}"] for result in results)
+          return callback err if err
+          callback null, ({name : result["Tables_in_#{database}"]} for result in results)
         db.end()
       
       when 'get_fields'
         # Get an array of fields in a table
-        console.log request
+        {database, table} = request_data
+        
+        db = mysql.createClient @session.credentials
+        db.query "use #{database}"
+        db.query "describe #{table}", (err, results) ->
+          return callback err if err
+          
+          # Fields need a bit of processing...
+          fields = results.map (result) ->
+            {
+              name           : result.Field
+              type           : result.Type.match(/(.*?)(\(|$)/)[1]
+              length         : result.Type.match(/\((.*)\)/)[1]
+              nullable       : if result.Null is 'NO' then no else yes
+              default        : result.Default
+              auto_increment : if result.Extra.match /auto_increment/ then yes else no
+              key            : switch result.Key
+                when 'PRI' then 'primary'
+                when 'UNI' then 'unique'
+                when 'MUL' then 'index'
+                else 'false'
+            }
+          callback null, fields
+        db.end()
       
       when 'save_table'
         # Save the current properties of a table to the database

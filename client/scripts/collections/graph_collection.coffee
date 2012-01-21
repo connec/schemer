@@ -27,17 +27,11 @@ module.exports = class GraphCollection extends Backbone.Collection
       when 'Table'
         data.database = @parent.get 'name'
     
-    global.socket.request "get_#{@constructor.name.toLowerCase()}", data, (err, response) =>
+    global.socket.request "get_#{@constructor.name.toLowerCase()}", data, (err, models) =>
       return error null, err if err
       
-      # Construct the correct format for `add`
-      models = []
-      for name in response
-        models.push
-          parent : @parent
-          name   : name
-      
-      # Add the databases to the collection
+      # Add the models
+      model.parent = @parent for model in models
       @add models
       
       # Invoke the `success` callback

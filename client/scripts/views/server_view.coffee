@@ -95,8 +95,9 @@ module.exports = class ServerView extends BaseView
                 onComplete : -> finished()
             (finished) ->
               tree_node = tree.graph.getNode node.id
-              return finished() if tree_node.model.get('children').length
-              tree_node.model.fetch_children (err) ->
+              children  = tree_node.model.get 'children'
+              return finished() unless children? and children.length is 0
+              tree_node.model.fetch_children (err, children) ->
                 return finished err if err
                 tree.addSubtree tree_node.model.get_graph_json(), 'animate',
                   hideLabels : false

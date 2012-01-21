@@ -97,7 +97,7 @@
                     GraphModel.__super__.constructor.apply(this, arguments);
                     this.set({
                         id: "" + ((_ref = (_ref2 = this.get("parent")) != null ? _ref2.get("id") : void 0) != null ? _ref : "") + "/" + this.get("name"),
-                        children: new this.Children(this)
+                        children: this.Children != null ? new this.Children(this) : null
                     });
                 }
                 GraphModel.prototype.fetch_children = function(callback) {
@@ -111,12 +111,13 @@
                     });
                 };
                 GraphModel.prototype.get_graph_json = function() {
+                    var _ref;
                     return {
                         id: this.get("id"),
                         name: this.get("name"),
-                        children: this.get("children").map(function(child) {
+                        children: (_ref = this.get("children")) != null ? _ref.map(function(child) {
                             return child.get_graph_json();
-                        })
+                        }) : void 0
                     };
                 };
                 return GraphModel;
@@ -160,16 +161,12 @@
                       case "Table":
                         data.database = this.parent.get("name");
                     }
-                    return global.socket.request("get_" + this.constructor.name.toLowerCase(), data, function(err, response) {
-                        var models, name, _i, _len;
+                    return global.socket.request("get_" + this.constructor.name.toLowerCase(), data, function(err, models) {
+                        var model, _i, _len;
                         if (err) return error(null, err);
-                        models = [];
-                        for (_i = 0, _len = response.length; _i < _len; _i++) {
-                            name = response[_i];
-                            models.push({
-                                parent: _this.parent,
-                                name: name
-                            });
+                        for (_i = 0, _len = models.length; _i < _len; _i++) {
+                            model = models[_i];
+                            model.parent = _this.parent;
                         }
                         _this.add(models);
                         return success(_this, null);
@@ -599,10 +596,13 @@
                                         }
                                     });
                                 }, function(finished) {
-                                    var tree_node;
+                                    var children, tree_node;
                                     tree_node = tree.graph.getNode(node.id);
-                                    if (tree_node.model.get("children").length) return finished();
-                                    return tree_node.model.fetch_children(function(err) {
+                                    children = tree_node.model.get("children");
+                                    if (!(children != null && children.length === 0)) {
+                                        return finished();
+                                    }
+                                    return tree_node.model.fetch_children(function(err, children) {
                                         if (err) return finished(err);
                                         return tree.addSubtree(tree_node.model.get_graph_json(), "animate", {
                                             hideLabels: false,
