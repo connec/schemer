@@ -8726,7 +8726,7 @@ $jit.ST= (function() {
 
        reposition: function() {
             this.graph.computeLevels(this.root, 0, "ignore");
-             this.geom.setRightLevelToShow(this.clickedNode, this.canvas);
+            this.geom.setRightLevelToShow(this.clickedNode, this.canvas);
             this.graph.eachNode(function(n) {
                 if(n.exist) n.drawn = true;
             });

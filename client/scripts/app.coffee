@@ -19,7 +19,7 @@ socket_request = (request, request_data, callback) ->
     if err
       error = new Error
       error[k] = v for k, v of err
-      callback error
+      return callback error
     return callback null, result
   
   @emit 'request', data

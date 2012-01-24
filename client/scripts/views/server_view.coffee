@@ -35,9 +35,6 @@ module.exports = class ServerView extends BaseView
       else
         element.textContent = node.name
     
-    # Track the currently selected level in the tree
-    current_level = 0
-    
     # Create a spacetree visualisation
     tree = new $jit.ST
       # Setup the tree's properties
@@ -98,15 +95,20 @@ module.exports = class ServerView extends BaseView
               (finished) ->
                 tree_node = tree.graph.getNode node.id
                 children  = tree_node.model.get 'children'
-                return finished() unless children? and children.length is 0
-                tree_node.model.fetch_children (err, children) ->
-                  return finished err if err
+                if children?.length is 0
+                  tree_node.model.fetch_children (err, children) ->
+                    return finished err if err
+                    tree.addSubtree tree_node.model.get_graph_json(), 'animate',
+                      hideLabels : false
+                      onComplete : -> finished()
+                else if children?.length
                   tree.addSubtree tree_node.model.get_graph_json(), 'animate',
                     hideLabels : false
                     onComplete : -> finished()
+                else
+                  tree.onClick node.id
             ], (err) ->
               return console.log String err if err
-              current_level = node._depth
               tree.onClick node.id
           # Else, we're moving backwards...
           else

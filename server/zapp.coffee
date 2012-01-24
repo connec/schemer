@@ -61,79 +61,82 @@ module.exports = zapp = zappa.app ->
     callback = (err, result) =>
       @emit "response_#{id}", {err, result}
     
-    switch request
-      when 'login'
-        # Attempt to log in to the database server with given credentials
-        db = mysql.createClient request_data
-        db.query 'show databases', (err) =>
-          return callback err if err
-          @session.credentials = request_data
-          @session.save (err) =>
+    try
+      switch request
+        when 'login'
+          # Attempt to log in to the database server with given credentials
+          db = mysql.createClient request_data
+          db.query 'show databases', (err) =>
             return callback err if err
-            callback null, null
-        db.end()
-      
-      when 'check_login'
-        # See if the client is logged in
-        if @session.credentials?
-          callback null, 
-            host : @session.credentials.host
-            user : @session.credentials.user
-        else
-          callback null, false
-      
-      when 'get_databases'
-        # Get an array of database on the server
-        db = mysql.createClient @session.credentials
-        db.query 'show databases', (err, results) ->
-          return callback err if err
-          callback null, ({name : result.Database} for result in results)
-        db.end()
-      
-      when 'get_tables'
-        # Get an array of tables in a database
-        {database} = request_data
+            @session.credentials = request_data
+            @session.save (err) =>
+              return callback err if err
+              callback null, null
+          db.end (err) -> console.log String err if err
         
-        db = mysql.createClient @session.credentials
-        db.query "use #{database}"
-        db.query 'show tables', (err, results) ->
-          return callback err if err
-          callback null, ({name : result["Tables_in_#{database}"]} for result in results)
-        db.end()
-      
-      when 'get_fields'
-        # Get an array of fields in a table
-        {database, table} = request_data
+        when 'check_login'
+          # See if the client is logged in
+          if @session.credentials?
+            callback null, 
+              host : @session.credentials.host
+              user : @session.credentials.user
+          else
+            callback null, false
         
-        db = mysql.createClient @session.credentials
-        db.query "use #{database}"
-        db.query "describe #{table}", (err, results) ->
-          return callback err if err
+        when 'get_databases'
+          # Get an array of database on the server
+          db = mysql.createClient @session.credentials
+          db.query 'show databases', (err, results) ->
+            return callback err if err
+            callback null, ({name : result.Database} for result in results)
+          db.end (err) -> console.log String err if err
+        
+        when 'get_tables'
+          # Get an array of tables in a database
+          {database} = request_data
           
-          # Fields need a bit of processing...
-          fields = results.map (result) ->
-            {
-              name           : result.Field
-              type           : result.Type.match(/(.*?)(\(|$)/)[1]
-              length         : result.Type.match(/\((.*)\)/)[1]
-              nullable       : if result.Null is 'NO' then no else yes
-              default        : result.Default
-              auto_increment : if result.Extra.match /auto_increment/ then yes else no
-              key            : switch result.Key
-                when 'PRI' then 'primary'
-                when 'UNI' then 'unique'
-                when 'MUL' then 'index'
-                else 'false'
-            }
-          callback null, fields
-        db.end()
-      
-      when 'save_table'
-        # Save the current properties of a table to the database
-        console.log request
-      
-      else
-        throw new Error "cannot handle request: #{request}"
+          db = mysql.createClient @session.credentials
+          db.query "use #{database}"
+          db.query 'show tables', (err, results) ->
+            return callback err if err
+            callback null, ({name : result["Tables_in_#{database}"]} for result in results)
+          db.end (err) -> console.log String err if err
+        
+        when 'get_fields'
+          # Get an array of fields in a table
+          {database, table} = request_data
+          
+          db = mysql.createClient @session.credentials
+          db.query "use #{database}"
+          db.query "describe #{table}", (err, results) ->
+            return callback err if err
+            
+            # Fields need a bit of processing...
+            fields = results.map (result) ->
+              {
+                name           : result.Field
+                type           : result.Type.match(/(.*?)(\(|$)/)[1]
+                length         : result.Type.match(/\((.*)\)/)?[1]
+                nullable       : if result.Null is 'NO' then no else yes
+                default        : result.Default
+                auto_increment : if result.Extra.match /auto_increment/ then yes else no
+                key            : switch result.Key
+                  when 'PRI' then 'primary'
+                  when 'UNI' then 'unique'
+                  when 'MUL' then 'index'
+                  else 'false'
+              }
+            callback null, fields
+          db.end (err) -> console.log String err if err
+        
+        when 'save_table'
+          # Save the current properties of a table to the database
+          console.log request
+        
+        else
+          throw new Error "cannot handle request: #{request}"
+    catch err
+      callback err
   
   # The only HTTP response - renders the layout
   @get '/' : ->

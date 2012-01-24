@@ -228,6 +228,7 @@
                     Fields.__super__.constructor.apply(this, arguments);
                 }
                 Fields.prototype.model = Field;
+                Fields.prototype.comparator = null;
                 return Fields;
             }(GraphCollection);
         })).call(this);
@@ -481,6 +482,22 @@
                     });
                     buf.push("<div");
                     buf.push(attrs({
+                        id: "toolbox"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</div>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 4,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<div");
+                    buf.push(attrs({
                         id: "graph"
                     }));
                     buf.push(">");
@@ -541,7 +558,7 @@
                     return this.render_graph();
                 };
                 ServerView.prototype.render_graph = function() {
-                    var current_level, ruler, set_label_text, tree, _this = this;
+                    var ruler, set_label_text, tree, _this = this;
                     ruler = this.$("#ruler");
                     set_label_text = function(element, node) {
                         var ratio;
@@ -553,7 +570,6 @@
                             return element.textContent = node.name;
                         }
                     };
-                    current_level = 0;
                     tree = new $jit.ST({
                         injectInto: "graph",
                         duration: 500,
@@ -618,21 +634,28 @@
                                         var children, tree_node;
                                         tree_node = tree.graph.getNode(node.id);
                                         children = tree_node.model.get("children");
-                                        if (!(children != null && children.length === 0)) {
-                                            return finished();
-                                        }
-                                        return tree_node.model.fetch_children(function(err, children) {
-                                            if (err) return finished(err);
+                                        if ((children != null ? children.length : void 0) === 0) {
+                                            return tree_node.model.fetch_children(function(err, children) {
+                                                if (err) return finished(err);
+                                                return tree.addSubtree(tree_node.model.get_graph_json(), "animate", {
+                                                    hideLabels: false,
+                                                    onComplete: function() {
+                                                        return finished();
+                                                    }
+                                                });
+                                            });
+                                        } else if (children != null ? children.length : void 0) {
                                             return tree.addSubtree(tree_node.model.get_graph_json(), "animate", {
                                                 hideLabels: false,
                                                 onComplete: function() {
                                                     return finished();
                                                 }
                                             });
-                                        });
+                                        } else {
+                                            return tree.onClick(node.id);
+                                        }
                                     } ], function(err) {
                                         if (err) return console.log(String(err));
-                                        current_level = node._depth;
                                         return tree.onClick(node.id);
                                     });
                                 } else {
@@ -917,7 +940,7 @@
                             v = err[k];
                             error[k] = v;
                         }
-                        callback(error);
+                        return callback(error);
                     }
                     return callback(null, result);
                 });
