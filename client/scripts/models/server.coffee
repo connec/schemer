@@ -10,3 +10,10 @@ module.exports = class Server extends GraphModel
   Servers contain databases.
   ###
   Children: Databases
+  
+  ###
+  Initialize the model.
+  ###
+  constructor: ->
+    super
+    @set id : @get 'name'
