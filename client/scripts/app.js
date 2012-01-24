@@ -655,7 +655,6 @@
                         request: function(node_id, level, _arg) {
                             var model, node, onComplete;
                             onComplete = _arg.onComplete;
-                            console.log(node_id);
                             if (level === 0) return onComplete(node_id);
                             node = tree.graph.getNode(node_id);
                             model = node.model;

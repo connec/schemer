@@ -122,7 +122,6 @@ module.exports = class ServerView extends BaseView
       # Dynamically load the appropriate nodes.
       request: (node_id, level, {onComplete}) ->
         # Make sure this is a 'legit' request
-        console.log node_id
         return onComplete node_id if level is 0
         
         # The subtree is simply the node's associated model's children
