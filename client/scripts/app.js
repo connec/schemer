@@ -101,7 +101,10 @@
                     });
                 }
                 GraphModel.prototype.fetch_children = function(callback) {
-                    return this.get("children").fetch({
+                    var children;
+                    children = this.get("children");
+                    if (!children) return callback(null, children);
+                    return children.fetch({
                         error: function(_, err) {
                             return callback(err);
                         },
@@ -366,10 +369,13 @@
             GraphModel = require("./graph_model");
             module.exports = Server = function(_super) {
                 __extends(Server, _super);
+                Server.prototype.Children = Databases;
                 function Server() {
                     Server.__super__.constructor.apply(this, arguments);
+                    this.set({
+                        id: this.get("name")
+                    });
                 }
-                Server.prototype.Children = Databases;
                 return Server;
             }(GraphModel);
         })).call(this);
@@ -604,76 +610,64 @@
                             style.fontSize = "0.8em";
                             style.textAlign = "center";
                             return element.onclick = function() {
-                                var tree_node;
-                                if (node._depth === tree.clickedNode._depth) return;
-                                if (node._depth > tree.clickedNode._depth) {
-                                    return async.series([ function(finished) {
-                                        var nodes;
-                                        nodes = [];
-                                        tree.graph.eachNode(function(subnode) {
-                                            if (!(subnode._depth === node._depth && subnode.id !== node.id)) {
-                                                return;
-                                            }
-                                            if (!tree.graph.getNode(subnode.id).getParents().length) {
-                                                return;
-                                            }
-                                            if (!tree.graph.getNode(subnode.id).getParents()[0].selected) {
-                                                return;
-                                            }
-                                            return nodes.push(subnode.id);
-                                        });
-                                        return tree.op.removeNode(nodes, {
-                                            duration: 250,
-                                            hideLabels: false,
-                                            type: "fade:con",
-                                            onComplete: function() {
-                                                return finished();
-                                            }
-                                        });
-                                    }, function(finished) {
-                                        var children, tree_node;
-                                        tree_node = tree.graph.getNode(node.id);
-                                        children = tree_node.model.get("children");
-                                        if ((children != null ? children.length : void 0) === 0) {
-                                            return tree_node.model.fetch_children(function(err, children) {
-                                                if (err) return finished(err);
-                                                return tree.addSubtree(tree_node.model.get_graph_json(), "animate", {
-                                                    hideLabels: false,
-                                                    onComplete: function() {
-                                                        return finished();
-                                                    }
-                                                });
-                                            });
-                                        } else if (children != null ? children.length : void 0) {
-                                            return tree.addSubtree(tree_node.model.get_graph_json(), "animate", {
-                                                hideLabels: false,
-                                                onComplete: function() {
-                                                    return finished();
-                                                }
-                                            });
-                                        } else {
-                                            return tree.onClick(node.id);
-                                        }
-                                    } ], function(err) {
-                                        if (err) return console.log(String(err));
-                                        return tree.onClick(node.id);
-                                    });
-                                } else {
-                                    tree_node = tree.graph.getNode(node.id);
+                                var click, parent, siblings, tree_node;
+                                tree_node = tree.graph.getNode(node.id);
+                                click = function(on_complete) {
                                     return tree.onClick(node.id, {
                                         onComplete: function() {
-                                            return tree.addSubtree(tree_node.model.get_graph_json(), "animate", {
-                                                hideLabels: false
+                                            tree_node.eachAdjacency(function(adjacency, node_id) {
+                                                if (adjacency.nodeTo._depth < tree_node._depth) return;
+                                                if (_.keys(adjacency.nodeTo.adjacencies).length === 1) return;
+                                                return tree.removeSubtree(node_id, false, "replot");
                                             });
+                                            return typeof on_complete === "function" ? on_complete() : void 0;
                                         }
+                                    });
+                                };
+                                if (node._depth > tree.clickedNode._depth) {
+                                    siblings = [];
+                                    parent = tree_node.getParents()[0];
+                                    if (parent != null) {
+                                        parent.eachAdjacency(function(adjacency, node_id) {
+                                            var sibling;
+                                            sibling = adjacency.nodeTo;
+                                            if (sibling._depth < parent._depth || sibling.id === node.id) {
+                                                return;
+                                            }
+                                            return siblings.push(sibling.id);
+                                        });
+                                    }
+                                    return tree.op.removeNode(siblings, {
+                                        duration: 250,
+                                        hideLabels: false,
+                                        type: "fade:con",
+                                        onComplete: click
+                                    });
+                                } else {
+                                    return click(function() {
+                                        return tree.addSubtree(tree_node.model.get_graph_json(), "animate", {
+                                            hideLabels: false
+                                        });
                                     });
                                 }
                             };
                         },
+                        request: function(node_id, level, _arg) {
+                            var model, node, onComplete;
+                            onComplete = _arg.onComplete;
+                            console.log(node_id);
+                            if (level === 0) return onComplete(node_id);
+                            node = tree.graph.getNode(node_id);
+                            model = node.model;
+                            return model.fetch_children(function(err) {
+                                if (err) throw err;
+                                return onComplete(node_id, model.get_graph_json());
+                            });
+                        },
                         onBeforePlotNode: function(node) {
                             var parts;
                             node.model = global.server;
-                            parts = node.id.split(/\//g).slice(2);
+                            parts = node.id.split(/\//g).slice(1);
                             while (parts.length) {
                                 node.model = node.model.get("children").find(function(child) {
                                     return child.get("name") === parts[0];

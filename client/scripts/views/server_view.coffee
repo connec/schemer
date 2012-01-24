@@ -75,54 +75,68 @@ module.exports = class ServerView extends BaseView
         style.textAlign  = 'center'
         
         element.onclick = ->
-          return if node._depth == tree.clickedNode._depth
+          # Get the actual node object in the graph
+          tree_node = tree.graph.getNode node.id
           
-          # If we're moving deeper in the tree...
+          # Callback to trigger the graph's onClick event
+          click = (on_complete) ->
+            tree.onClick node.id, onComplete : ->
+              # Remove any no-longer-visible subtrees
+              tree_node.eachAdjacency (adjacency, node_id) ->
+                # Don't remove parent nodes
+                return if adjacency.nodeTo._depth < tree_node._depth
+                
+                # Don't waste time removing empty trees
+                return if _.keys(adjacency.nodeTo.adjacencies).length is 1
+                
+                tree.removeSubtree node_id, false, 'replot'
+              
+              # Call the additional 'on_complete' if given
+              on_complete?()
+          
+          # We want to remove siblings if we're moving deeper into the tree
           if node._depth > tree.clickedNode._depth
-            async.series [
-              (finished) ->
-                nodes = []
-                tree.graph.eachNode (subnode) ->
-                  return unless subnode._depth == node._depth and subnode.id != node.id
-                  return unless tree.graph.getNode(subnode.id).getParents().length
-                  return unless tree.graph.getNode(subnode.id).getParents()[0].selected
-                  nodes.push subnode.id
-                tree.op.removeNode nodes,
-                  duration   : 250
-                  hideLabels : false
-                  type       : 'fade:con'
-                  onComplete : -> finished()
-              (finished) ->
-                tree_node = tree.graph.getNode node.id
-                children  = tree_node.model.get 'children'
-                if children?.length is 0
-                  tree_node.model.fetch_children (err, children) ->
-                    return finished err if err
-                    tree.addSubtree tree_node.model.get_graph_json(), 'animate',
-                      hideLabels : false
-                      onComplete : -> finished()
-                else if children?.length
-                  tree.addSubtree tree_node.model.get_graph_json(), 'animate',
-                    hideLabels : false
-                    onComplete : -> finished()
-                else
-                  tree.onClick node.id
-            ], (err) ->
-              return console.log String err if err
-              tree.onClick node.id
-          # Else, we're moving backwards...
+            # Collect the sibling of the selected node
+            siblings = []
+            parent   = tree_node.getParents()[0]
+            parent?.eachAdjacency (adjacency, node_id) ->
+              sibling = adjacency.nodeTo
+              
+              # Only interested in child nodes, and not the selected node
+              return if sibling._depth < parent._depth or sibling.id == node.id
+              siblings.push sibling.id
+            
+            # Remove the siblings from the graph
+            tree.op.removeNode siblings,
+              duration   : 250
+              hideLabels : false
+              type       : 'fade:con'
+              onComplete : click
+          
+          # Else, we want to add in deleted nodes
           else
-            tree_node = tree.graph.getNode node.id
-            tree.onClick node.id,
-              onComplete: ->
-                tree.addSubtree tree_node.model.get_graph_json(), 'animate',
-                  hideLabels : false
+            click ->
+              tree.addSubtree tree_node.model.get_graph_json(), 'animate',
+                hideLabels : false
+      
+      # Dynamically load the appropriate nodes.
+      request: (node_id, level, {onComplete}) ->
+        # Make sure this is a 'legit' request
+        console.log node_id
+        return onComplete node_id if level is 0
+        
+        # The subtree is simply the node's associated model's children
+        node  = tree.graph.getNode node_id
+        model = node.model
+        model.fetch_children (err) ->
+          throw err if err
+          onComplete node_id, model.get_graph_json()
       
       # Set node properties before they are drawn
       onBeforePlotNode : (node) =>
         # Find the model for this node
         node.model = global.server
-        parts = node.id.split(/\//g)[2...]
+        parts = node.id.split(/\//g)[1...]
         while parts.length
           node.model = node.model.get('children').find (child) ->
             child.get('name') == parts[0]
