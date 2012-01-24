@@ -16,7 +16,9 @@ module.exports = class GraphModel extends Backbone.Model
   Loads this model's children from the database.
   ###
   fetch_children: (callback) ->
-    @get('children').fetch
+    children = @get 'children'
+    return callback null, children unless children
+    children.fetch
       error   : (_, err) -> callback err
       success : (collection) -> callback null, collection
   
