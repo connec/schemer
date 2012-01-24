@@ -9,7 +9,7 @@ module.exports = class GraphModel extends Backbone.Model
   constructor: ->
     super
     @set
-      id       : "#{@get('parent')?.get('id') ? ''}/#{@get 'name'}"
+      node_id  : "#{@get('parent')?.get('node_id') ? ''}/#{@get 'name'}"
       children : if @Children? then new @Children @ else null
   
   ###
@@ -28,7 +28,7 @@ module.exports = class GraphModel extends Backbone.Model
   get_graph_json: (depth = 1) ->
     children = @get 'children'
     {
-      id       : @get 'id'
+      id       : @get 'node_id'
       name     : @get 'name'
       children : if depth and children?
           depth--

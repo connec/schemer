@@ -16,4 +16,6 @@ module.exports = class Server extends GraphModel
   ###
   constructor: ->
     super
-    @set id : @get 'name'
+    @set
+      id      : true
+      node_id : @get 'name'

@@ -31,6 +31,9 @@ module.exports = class GraphCollection extends Backbone.Collection
       return error null, err if err
       
       # Add the models
+      for model in models
+        model.id     = true
+        model.parent = @parent
       model.parent = @parent for model in models
       @add models
       
