@@ -391,6 +391,31 @@
         })).call(this);
     });
     register({
+        views: [ "./toolbox_view" ]
+    }, "views", function(global, module, exports, require, window) {
+        ((function() {
+            var ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+                for (var key in parent) {
+                    if (__hasProp.call(parent, key)) child[key] = parent[key];
+                }
+                function ctor() {
+                    this.constructor = child;
+                }
+                ctor.prototype = parent.prototype;
+                child.prototype = new ctor;
+                child.__super__ = parent.prototype;
+                return child;
+            };
+            module.exports = ToolboxView = function(_super) {
+                __extends(ToolboxView, _super);
+                function ToolboxView(el) {
+                    this.el = el;
+                }
+                return ToolboxView;
+            }(Backbone.View);
+        })).call(this);
+    });
+    register({
         "views\\templates": [ "../../lib/vendor/jade_runtime" ]
     }, "lib\\vendor", function(global, module, exports, require, window) {
         if (!Array.isArray) {
@@ -540,7 +565,7 @@
         "": [ "./views/server_view" ]
     }, "views", function(global, module, exports, require, window) {
         ((function() {
-            var BaseView, Server, ServerView, __bind = function(fn, me) {
+            var BaseView, Server, ServerView, ToolboxView, __bind = function(fn, me) {
                 return function() {
                     return fn.apply(me, arguments);
                 };
@@ -558,6 +583,7 @@
             };
             BaseView = require("./base_view");
             Server = require("../models/server");
+            ToolboxView = require("./toolbox_view");
             module.exports = ServerView = function(_super) {
                 __extends(ServerView, _super);
                 ServerView.prototype.template = require("./templates/server");
@@ -576,17 +602,21 @@
                 ServerView.prototype.render = function() {
                     $("body").html("").append(this.el);
                     this.$ruler = this.$("#ruler");
+                    this.toolbox = new ToolboxView(this.$("#toolbox"));
                     return this.render_graph();
                 };
                 ServerView.prototype.render_graph = function() {
                     var _this = this;
                     this.tree = new Tree($("#graph"));
+                    $(global).resize(function() {
+                        return _this.tree.refresh();
+                    });
                     this.tree.bind("node:add", function(node, context) {
                         var _ref;
-                        _this.set_label_text(node.$label);
-                        return node.model = (_ref = context != null ? context.model.children().find({
+                        node.model = (_ref = context != null ? context.model.children().find({
                             name: node.$label.text()
                         }) : void 0) != null ? _ref : global.server;
+                        return _this.set_label_text(node.$label);
                     });
                     this.tree.bind("node:remove", function(node) {
                         return delete node.model;
@@ -624,7 +654,7 @@
                     }
                     this.tree.set_centre(node);
                     this.tree.animate();
-                    if (!node.model.children()) return;
+                    if (!node.model.children()) return this.finish_move(node);
                     return this.tree.bind_once("anim:after", function() {
                         return node.model.fetch_children(function(err, children) {
                             if (err) return console.log(String(err));

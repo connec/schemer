@@ -1,5 +1,6 @@
-BaseView = require './base_view'
-Server   = require '../models/server'
+BaseView    = require './base_view'
+Server      = require '../models/server'
+ToolboxView = require './toolbox_view'
 
 module.exports = class ServerView extends BaseView
   ###
@@ -26,7 +27,8 @@ module.exports = class ServerView extends BaseView
   ###
   render: ->
     $('body').html('').append @el
-    @$ruler = @$('#ruler')
+    @$ruler  = @$('#ruler')
+    @toolbox = new ToolboxView @$('#toolbox')
     @render_graph()
   
   ###
@@ -36,12 +38,15 @@ module.exports = class ServerView extends BaseView
     # Create a spacetree visualisation
     @tree = new Tree $('#graph')
     
+    $(global).resize =>
+      @tree.refresh()
+    
     @tree.bind 'node:add', (node, context) =>
-      # Fix the label
-      @set_label_text node.$label
-      
       # Attach the model represented by the node
       node.model = context?.model.children().find(name: node.$label.text()) ? global.server
+      
+      # Fix the label
+      @set_label_text node.$label
     
     @tree.bind 'node:remove', (node) ->
       # Remove the model property
@@ -93,7 +98,7 @@ module.exports = class ServerView extends BaseView
     @tree.animate()
     
     # After the animation, add all the new node's children
-    return unless node.model.children()
+    return @finish_move node unless node.model.children()
     @tree.bind_once 'anim:after', =>
       node.model.fetch_children (err, children) =>
         return console.log String err if err

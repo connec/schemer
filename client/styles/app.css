@@ -224,12 +224,31 @@ body {
   font-size: 10pt;
   text-align: center;
 }
-#server #graph .wrapper .node.selected .label {
+#server #graph .wrapper .node.in-path .edge {
+  color: #cc6;
+}
+#server #graph .wrapper .node.in-path .label {
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #ff9), color-stop(1, #cc6));
+  background-image: -webkit-linear-gradient(top, #ff9 0%, #cc6 100%);
+  background-image: -moz-linear-gradient(top, #ff9 0%, #cc6 100%);
+  background-image: linear-gradient(top, #ff9 0%, #cc6 100%);
+  border-color: #cc6;
+}
+#server #graph .wrapper .node.in-path.selected .label {
   background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #9f9), color-stop(1, #6c6));
   background-image: -webkit-linear-gradient(top, #9f9 0%, #6c6 100%);
   background-image: -moz-linear-gradient(top, #9f9 0%, #6c6 100%);
   background-image: linear-gradient(top, #9f9 0%, #6c6 100%);
-  border: 1px solid #6c6;
+  border-color: #6c6;
+}
+#toolbox {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 250px;
+  height: 100%;
+  background-color: #eee;
+  border-right: 1px solid #ccc;
 }
 @-moz-keyframes rotate_clockwise {
   0% {
