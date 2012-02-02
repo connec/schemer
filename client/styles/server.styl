@@ -8,5 +8,39 @@
     font-size     0.8em
   
   #graph
-    width  100%
-    height 100%
+    position relative
+    width    100%
+    height   100%
+    
+    .wrapper
+      position        absolute
+      margin          0
+      padding         0
+      list-style-type none
+    
+      .node
+        display  block
+        position absolute
+        
+        .edge
+          position    absolute
+          color       #bbb
+          line-height 1px
+        
+        .label
+          display          block
+          width            175px
+          height           30px
+          line-height      30px
+          background-image linear-gradient(top, #eee, #bbb)
+          border           1px solid #bbb
+          color            #333
+          cursor           pointer
+          font-family      'Lucida Console', monospace
+          font-size        10pt
+          text-align       center
+        
+        &.selected
+          .label
+            background-image linear-gradient(top, #9f9, #6c6)
+            border           1px solid #6c6

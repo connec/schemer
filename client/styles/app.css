@@ -94,11 +94,12 @@ html {
   height: 100%;
 }
 body {
+  font: 10pt 'Lucida Sans Unicode', 'Lucida Sans', Lucida, sans-serif;
   width: 100%;
   height: 100%;
   background-color: #fff;
   color: #333;
-  font: 10pt 'Lucida Sans Unicode', 'Lucida Sans', Lucida, sans-serif;
+  overflow: hidden;
 }
 .green {
   color: #090;
@@ -188,8 +189,47 @@ body {
   font-size: 0.8em;
 }
 #server #graph {
+  position: relative;
   width: 100%;
   height: 100%;
+}
+#server #graph .wrapper {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+#server #graph .wrapper .node {
+  display: block;
+  position: absolute;
+}
+#server #graph .wrapper .node .edge {
+  position: absolute;
+  color: #bbb;
+  line-height: 1px;
+}
+#server #graph .wrapper .node .label {
+  display: block;
+  width: 175px;
+  height: 30px;
+  line-height: 30px;
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #eee), color-stop(1, #bbb));
+  background-image: -webkit-linear-gradient(top, #eee 0%, #bbb 100%);
+  background-image: -moz-linear-gradient(top, #eee 0%, #bbb 100%);
+  background-image: linear-gradient(top, #eee 0%, #bbb 100%);
+  border: 1px solid #bbb;
+  color: #333;
+  cursor: pointer;
+  font-family: 'Lucida Console', monospace;
+  font-size: 10pt;
+  text-align: center;
+}
+#server #graph .wrapper .node.selected .label {
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #9f9), color-stop(1, #6c6));
+  background-image: -webkit-linear-gradient(top, #9f9 0%, #6c6 100%);
+  background-image: -moz-linear-gradient(top, #9f9 0%, #6c6 100%);
+  background-image: linear-gradient(top, #9f9 0%, #6c6 100%);
+  border: 1px solid #6c6;
 }
 @-moz-keyframes rotate_clockwise {
   0% {

@@ -96,14 +96,17 @@
                     var _ref, _ref2;
                     GraphModel.__super__.constructor.apply(this, arguments);
                     this.set({
-                        id: "" + ((_ref = (_ref2 = this.get("parent")) != null ? _ref2.get("id") : void 0) != null ? _ref : "") + "/" + this.get("name"),
+                        node_id: "" + ((_ref = (_ref2 = this.get("parent")) != null ? _ref2.get("node_id") : void 0) != null ? _ref : "") + "/" + this.get("name"),
                         children: this.Children != null ? new this.Children(this) : null
                     });
                 }
+                GraphModel.prototype.children = function() {
+                    return this.get("children");
+                };
                 GraphModel.prototype.fetch_children = function(callback) {
                     var children;
-                    children = this.get("children");
-                    if (!children) return callback(null, children);
+                    if (!(children = this.get("children"))) return callback();
+                    children.reset();
                     return children.fetch({
                         error: function(_, err) {
                             return callback(err);
@@ -112,18 +115,6 @@
                             return callback(null, collection);
                         }
                     });
-                };
-                GraphModel.prototype.get_graph_json = function(depth) {
-                    var children;
-                    if (depth == null) depth = 1;
-                    children = this.get("children");
-                    return {
-                        id: this.get("id"),
-                        name: this.get("name"),
-                        children: depth && children != null ? (depth--, children.map(function(child) {
-                            return child.get_graph_json(depth);
-                        })) : []
-                    };
                 };
                 return GraphModel;
             }(Backbone.Model);
@@ -167,14 +158,32 @@
                         data.database = this.parent.get("name");
                     }
                     return global.socket.request("get_" + this.constructor.name.toLowerCase(), data, function(err, models) {
-                        var model, _i, _len;
+                        var model, _i, _j, _len, _len2;
                         if (err) return error(null, err);
                         for (_i = 0, _len = models.length; _i < _len; _i++) {
                             model = models[_i];
+                            model.id = true;
+                            model.parent = _this.parent;
+                        }
+                        for (_j = 0, _len2 = models.length; _j < _len2; _j++) {
+                            model = models[_j];
                             model.parent = _this.parent;
                         }
                         _this.add(models);
                         return success(_this, null);
+                    });
+                };
+                GraphCollection.prototype.find = function(arg) {
+                    if (typeof arg === "function") {
+                        return GraphCollection.__super__.find.apply(this, arguments);
+                    }
+                    return GraphCollection.__super__.find.call(this, function(model) {
+                        var k, v;
+                        for (k in arg) {
+                            v = arg[k];
+                            if (model.get(k) !== v) return false;
+                        }
+                        return true;
                     });
                 };
                 return GraphCollection;
@@ -373,7 +382,8 @@
                 function Server() {
                     Server.__super__.constructor.apply(this, arguments);
                     this.set({
-                        id: this.get("name")
+                        id: true,
+                        node_id: this.get("name")
                     });
                 }
                 return Server;
@@ -530,7 +540,11 @@
         "": [ "./views/server_view" ]
     }, "views", function(global, module, exports, require, window) {
         ((function() {
-            var $jit, BaseView, Server, ServerView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var BaseView, Server, ServerView, __bind = function(fn, me) {
+                return function() {
+                    return fn.apply(me, arguments);
+                };
+            }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -542,7 +556,6 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            $jit = global.$jit;
             BaseView = require("./base_view");
             Server = require("../models/server");
             module.exports = ServerView = function(_super) {
@@ -550,6 +563,7 @@
                 ServerView.prototype.template = require("./templates/server");
                 function ServerView(on_loaded) {
                     this.on_loaded = on_loaded;
+                    this.node_click = __bind(this.node_click, this);
                     ServerView.__super__.constructor.apply(this, arguments);
                 }
                 ServerView.prototype.initialize = function() {
@@ -561,138 +575,114 @@
                 };
                 ServerView.prototype.render = function() {
                     $("body").html("").append(this.el);
+                    this.$ruler = this.$("#ruler");
                     return this.render_graph();
                 };
                 ServerView.prototype.render_graph = function() {
-                    var ruler, set_label_text, tree, _this = this;
-                    ruler = this.$("#ruler");
-                    set_label_text = function(element, node) {
-                        var ratio;
-                        ruler.text(node.name);
-                        if ((ratio = 140 / ruler.width()) < 1) {
-                            element.title = node.name;
-                            return element.textContent = node.name.slice(0, Math.floor(ratio * node.name.length) - 3) + "...";
-                        } else {
-                            return element.textContent = node.name;
-                        }
-                    };
-                    tree = new $jit.ST({
-                        injectInto: "graph",
-                        duration: 500,
-                        transition: $jit.Trans.Quart.easeInOut,
-                        levelDistance: 50,
-                        levelsToShow: 1,
-                        Navigation: {
-                            enable: true,
-                            panning: true
-                        },
-                        Edge: {
-                            type: "bezier",
-                            overridable: true
-                        },
-                        Node: {
-                            width: 150,
-                            height: 25,
-                            type: "rectangle",
-                            color: "#ccc",
-                            overridable: true
-                        },
-                        onCreateLabel: function(element, node) {
-                            var style;
-                            element.id = node.id;
-                            set_label_text(element, node);
-                            style = element.style;
-                            style.width = "150px";
-                            style.lineHeight = "30px";
-                            style.color = "#333";
-                            style.cursor = "pointer";
-                            style.fontFamily = "Lucida Console";
-                            style.fontSize = "0.8em";
-                            style.textAlign = "center";
-                            return element.onclick = function() {
-                                var click, parent, siblings, tree_node;
-                                tree_node = tree.graph.getNode(node.id);
-                                click = function(on_complete) {
-                                    return tree.onClick(node.id, {
-                                        onComplete: function() {
-                                            tree_node.eachAdjacency(function(adjacency, node_id) {
-                                                if (adjacency.nodeTo._depth < tree_node._depth) return;
-                                                if (_.keys(adjacency.nodeTo.adjacencies).length === 1) return;
-                                                return tree.removeSubtree(node_id, false, "replot");
-                                            });
-                                            return typeof on_complete === "function" ? on_complete() : void 0;
-                                        }
-                                    });
-                                };
-                                if (node._depth > tree.clickedNode._depth) {
-                                    siblings = [];
-                                    parent = tree_node.getParents()[0];
-                                    if (parent != null) {
-                                        parent.eachAdjacency(function(adjacency, node_id) {
-                                            var sibling;
-                                            sibling = adjacency.nodeTo;
-                                            if (sibling._depth < parent._depth || sibling.id === node.id) {
-                                                return;
-                                            }
-                                            return siblings.push(sibling.id);
-                                        });
-                                    }
-                                    return tree.op.removeNode(siblings, {
-                                        duration: 250,
-                                        hideLabels: false,
-                                        type: "fade:con",
-                                        onComplete: click
-                                    });
-                                } else {
-                                    return click(function() {
-                                        return tree.addSubtree(tree_node.model.get_graph_json(), "animate", {
-                                            hideLabels: false
-                                        });
-                                    });
-                                }
-                            };
-                        },
-                        request: function(node_id, level, _arg) {
-                            var model, node, onComplete;
-                            onComplete = _arg.onComplete;
-                            if (level === 0) return onComplete(node_id);
-                            node = tree.graph.getNode(node_id);
-                            model = node.model;
-                            return model.fetch_children(function(err) {
-                                if (err) throw err;
-                                return onComplete(node_id, model.get_graph_json());
-                            });
-                        },
-                        onBeforePlotNode: function(node) {
-                            var parts;
-                            node.model = global.server;
-                            parts = node.id.split(/\//g).slice(1);
-                            while (parts.length) {
-                                node.model = node.model.get("children").find(function(child) {
-                                    return child.get("name") === parts[0];
-                                });
-                                parts.shift();
-                            }
-                            if (node.selected) {
-                                return node.data.$color = "#aaa";
-                            } else {
-                                return delete node.data.$color;
-                            }
-                        },
-                        onBeforePlotLine: function(edge) {
-                            if (edge.nodeFrom.selected && edge.nodeTo.selected) {
-                                edge.data.$color = "#aaa";
-                                return edge.data.$lineWidth = 3;
-                            } else {
-                                delete edge.data.$color;
-                                return delete edge.data.$lineWidth;
-                            }
-                        }
+                    var _this = this;
+                    this.tree = new Tree($("#graph"));
+                    this.tree.bind("node:add", function(node, context) {
+                        var _ref;
+                        _this.set_label_text(node.$label);
+                        return node.model = (_ref = context != null ? context.model.children().find({
+                            name: node.$label.text()
+                        }) : void 0) != null ? _ref : global.server;
                     });
-                    tree.loadJSON(global.server.get_graph_json());
-                    tree.compute();
-                    tree.onClick(tree.root);
-                    return global.tree = tree;
+                    this.tree.bind("node:remove", function(node) {
+                        return delete node.model;
+                    });
+                    this.tree.bind("node:click", this.node_click);
+                    this.tree.set_root(global.server.get("name"));
+                    this.tree.root.$elem.addClass("in-path selected");
+                    this.tree.set_centre(this.tree.root);
+                    global.server.children().each(function(database) {
+                        return _this.tree.insert_node(database.get("name"), _this.tree.root);
+                    });
+                    this.tree.refresh();
+                    return global.tree = this.tree;
+                };
+                ServerView.prototype.node_click = function(node) {
+                    var direction, path, _i, _len, _ref, _ref2;
+                    if (node.$elem.hasClass("selected")) return;
+                    direction = ((_ref = node.parent) != null ? _ref.$elem.hasClass("selected") : void 0) ? "down" : "up";
+                    this.tree.$wrapper.find(".in-path, .selected").removeClass("in-path selected");
+                    node.$elem.addClass("selected");
+                    _ref2 = [ node ].concat(node.parents());
+                    for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+                        path = _ref2[_i];
+                        path.$elem.addClass("in-path");
+                    }
+                    this.tree.unbind("node:click", this.node_click);
+                    return this["move_" + direction](node);
+                };
+                ServerView.prototype.move_down = function(node) {
+                    var sibling, _i, _len, _ref, _this = this;
+                    _ref = node.siblings();
+                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                        sibling = _ref[_i];
+                        this.tree.remove_node(sibling);
+                    }
+                    this.tree.set_centre(node);
+                    this.tree.animate();
+                    if (!node.model.children()) return;
+                    return this.tree.bind_once("anim:after", function() {
+                        return node.model.fetch_children(function(err, children) {
+                            if (err) return console.log(String(err));
+                            children.each(function(child) {
+                                return _this.tree.insert_node(child.get("name"), node);
+                            });
+                            _this.tree.animate();
+                            return _this.tree.bind_once("anim:after", function() {
+                                return _this.finish_move(node);
+                            });
+                        });
+                    });
+                };
+                ServerView.prototype.move_up = function(node) {
+                    var child, only_child, _i, _len, _ref, _this = this;
+                    only_child = node.children[0];
+                    _ref = only_child.children.slice(0);
+                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                        child = _ref[_i];
+                        this.tree.remove_node(child);
+                    }
+                    this.tree.set_centre(node);
+                    this.tree.animate();
+                    return this.tree.bind_once("anim:after", function() {
+                        return node.model.fetch_children(function(err, children) {
+                            var i;
+                            if (err) return console.log(String(err));
+                            i = 0;
+                            children.each(function(child) {
+                                if (child.get("name") === only_child.model.get("name")) {
+                                    i++;
+                                } else {
+                                    _this.tree.insert_node(child.get("name"), node, i);
+                                }
+                                return i++;
+                            });
+                            _this.tree.animate();
+                            return _this.tree.bind_once("anim:after", function() {
+                                return _this.finish_move(node);
+                            });
+                        });
+                    });
+                };
+                ServerView.prototype.finish_move = function() {
+                    return this.tree.bind("node:click", this.node_click);
+                };
+                ServerView.prototype.set_label_text = function($label) {
+                    var label, ratio;
+                    label = $label.text();
+                    this.$ruler.text(label);
+                    if ((ratio = 140 / this.$ruler.width()) < 1) {
+                        $label.attr({
+                            title: label
+                        });
+                        return $label.text(label.slice(0, Math.floor(ratio * label.length) - 3) + "...");
+                    } else {
+                        return $label.text(label);
+                    }
                 };
                 return ServerView;
             }(BaseView);

@@ -39,3 +39,13 @@ module.exports = class GraphCollection extends Backbone.Collection
       
       # Invoke the `success` callback
       success @, null
+  
+  ###
+  
+  ###
+  find: (arg) ->
+    return super if typeof arg is 'function'
+    super (model) ->
+      for k, v of arg
+        return false unless model.get(k) == v
+      return true

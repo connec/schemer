@@ -157,7 +157,7 @@ module.exports = zapp = zappa.app ->
         script(src='/scripts/lib/vendor/backbone.js')
         script(src='/scripts/lib/vendor/socket.io.js')
         script(src='/scripts/lib/vendor/async.js')
-        script(src='/scripts/lib/vendor/jit.js')
+        script(src='/scripts/lib/vendor/tree/lib/tree.js')
         script(src='scripts/app.js')
       
       body
