@@ -1,6 +1,6 @@
-BaseView   = require './base_view'
-Server     = require '../models/server'
-ServerView = require './server_view'
+BaseView  = require './base_view'
+GraphView = require './graph_view'
+Server    = require '../models/server'
 
 module.exports = class LoginView extends BaseView
   # Load the home template
@@ -48,7 +48,7 @@ module.exports = class LoginView extends BaseView
       old_overflow = $('body').css 'overflow'
       
       # Instantiate the Server view, and set the on_loaded callback
-      new_view = new ServerView =>
+      new_view = new GraphView =>
         # Stop the spinning and start the leaving animation
         $('body').css 'overflow', 'hidden'
         @$('#ring').css '-webkit-animation-play-state', 'paused'

@@ -62,7 +62,7 @@
                 __extends(BaseView, _super);
                 function BaseView() {
                     this.el = $(this.template());
-                    BaseView.__super__.constructor.apply(this, arguments);
+                    BaseView.__super__.constructor.call(this);
                 }
                 BaseView.prototype.fade_in = function(duration) {
                     if (duration == null) duration = 500;
@@ -100,6 +100,9 @@
                         children: this.Children != null ? new this.Children(this) : null
                     });
                 }
+                GraphModel.prototype.parent = function() {
+                    return this.get("parent");
+                };
                 GraphModel.prototype.children = function() {
                     return this.get("children");
                 };
@@ -302,7 +305,8 @@
         })).call(this);
     });
     register({
-        collections: [ "../models/database" ]
+        collections: [ "../models/database" ],
+        "views\\toolbox": [ "../../models/database" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
             var Database, GraphModel, Tables, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
@@ -391,10 +395,10 @@
         })).call(this);
     });
     register({
-        views: [ "./toolbox_view" ]
-    }, "views", function(global, module, exports, require, window) {
+        "views\\toolbox": [ "./section_view" ]
+    }, "views\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var SectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -406,16 +410,25 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            module.exports = ToolboxView = function(_super) {
-                __extends(ToolboxView, _super);
-                function ToolboxView(el) {
-                    this.el = el;
+            module.exports = SectionView = function(_super) {
+                __extends(SectionView, _super);
+                function SectionView(toolbox, node) {
+                    this.toolbox = toolbox;
+                    this.node = node;
+                    this.el = $(this.template({
+                        name: this.node.model.get("name")
+                    }));
+                    SectionView.__super__.constructor.call(this);
                 }
-                return ToolboxView;
+                SectionView.prototype.render = function() {
+                    return this.el;
+                };
+                return SectionView;
             }(Backbone.View);
         })).call(this);
     });
     register({
+        "views\\templates\\toolbox": [ "../../../lib/vendor/jade_runtime" ],
         "views\\templates": [ "../../lib/vendor/jade_runtime" ]
     }, "lib\\vendor", function(global, module, exports, require, window) {
         if (!Array.isArray) {
@@ -471,6 +484,888 @@
         };
     });
     register({
+        "views\\toolbox": [ "../templates/toolbox/database" ]
+    }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
+        var jade = require("../../../lib/vendor/jade_runtime");
+        module.exports = function anonymous(locals, attrs, escape, rethrow) {
+            var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+            var __jade = [ {
+                lineno: 1,
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\toolbox\\database.jade"
+            } ];
+            try {
+                var buf = [];
+                with (locals || {}) {
+                    var interp;
+                    __jade.unshift({
+                        lineno: 1,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 1,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<section");
+                    buf.push(attrs({
+                        "class": "database"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 2,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<h1>" + escape((interp = name) == null ? "" : interp) + "");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</h1>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 4,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<ul>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 5,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 5,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "rename"
+                    }));
+                    buf.push(">Rename");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 7,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 7,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "drop"
+                    }));
+                    buf.push(">Drop");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 9,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 9,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "add"
+                    }));
+                    buf.push(">Add Table");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</ul>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</section>");
+                    __jade.shift();
+                    __jade.shift();
+                }
+                return buf.join("");
+            } catch (err) {
+                rethrow(err, __jade[0].filename, __jade[0].lineno);
+            }
+        };
+    });
+    register({
+        views: [ "./toolbox/database_section_view" ]
+    }, "views\\toolbox", function(global, module, exports, require, window) {
+        ((function() {
+            var DatabaseSectionView, SectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+                for (var key in parent) {
+                    if (__hasProp.call(parent, key)) child[key] = parent[key];
+                }
+                function ctor() {
+                    this.constructor = child;
+                }
+                ctor.prototype = parent.prototype;
+                child.prototype = new ctor;
+                child.__super__ = parent.prototype;
+                return child;
+            };
+            SectionView = require("./section_view");
+            module.exports = DatabaseSectionView = function(_super) {
+                __extends(DatabaseSectionView, _super);
+                function DatabaseSectionView() {
+                    DatabaseSectionView.__super__.constructor.apply(this, arguments);
+                }
+                DatabaseSectionView.prototype.template = require("../templates/toolbox/database");
+                DatabaseSectionView.prototype.events = {
+                    "click .drop": "drop_database",
+                    "click .rename": "rename_database"
+                };
+                DatabaseSectionView.prototype.drop_database = function() {
+                    var _this = this;
+                    $("#overlay").show().fadeTo(250, .5);
+                    return global.socket.request("drop_database", {
+                        database: this.node.model.get("name")
+                    }, function(err) {
+                        var parent;
+                        $("#overlay").fadeTo(250, 0, function() {
+                            return $(this).hide();
+                        });
+                        if (err) return console.log(String(err));
+                        parent = _this.node.parent;
+                        _this.toolbox.graph.tree.remove_node(_this.node);
+                        return _this.toolbox.graph.node_click(parent);
+                    });
+                };
+                DatabaseSectionView.prototype.rename_database = function() {
+                    var $input, rename, _this = this;
+                    rename = function(e) {
+                        var new_name;
+                        if (e.type === "keypress" && e.which !== 13) return;
+                        $("#overlay").show().fadeTo(250, .5);
+                        new_name = $input.val().toLowerCase();
+                        $input.val(new_name);
+                        return global.socket.request("rename_database", {
+                            old_name: _this.node.model.get("name"),
+                            new_name: new_name
+                        }, function(err) {
+                            $("#overlay").fadeTo(250, 0, function() {
+                                return $(this).hide();
+                            });
+                            if (err) return console.log(String(err));
+                            _this.node.$label.text(new_name);
+                            _this.node.model.set({
+                                name: new_name
+                            });
+                            return _this.$("h1").text(new_name);
+                        });
+                    };
+                    this.node.$label.html("");
+                    return $input = $("<input/>").attr({
+                        type: "text",
+                        value: this.node.model.get("name")
+                    }).appendTo(this.node.$label).focus().select().bind("blur", rename).bind("keypress", rename);
+                };
+                return DatabaseSectionView;
+            }(SectionView);
+        })).call(this);
+    });
+    register({
+        "views\\toolbox": [ "../templates/toolbox/field" ]
+    }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
+        var jade = require("../../../lib/vendor/jade_runtime");
+        module.exports = function anonymous(locals, attrs, escape, rethrow) {
+            var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+            var __jade = [ {
+                lineno: 1,
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\toolbox\\field.jade"
+            } ];
+            try {
+                var buf = [];
+                with (locals || {}) {
+                    var interp;
+                    __jade.unshift({
+                        lineno: 1,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 1,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<section");
+                    buf.push(attrs({
+                        "class": "field"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 2,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<h1>" + escape((interp = name) == null ? "" : interp) + "");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</h1>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 4,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<ul>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 5,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 5,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "rename"
+                    }));
+                    buf.push(">Rename");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 7,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 7,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "drop"
+                    }));
+                    buf.push(">Drop");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 9,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 9,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "type"
+                    }));
+                    buf.push(">Set Type");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 11,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 11,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "default"
+                    }));
+                    buf.push(">Set Default");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 13,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 13,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "key"
+                    }));
+                    buf.push(">Add key");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 15,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 15,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "ai"
+                    }));
+                    buf.push(">Auto-increment");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</ul>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</section>");
+                    __jade.shift();
+                    __jade.shift();
+                }
+                return buf.join("");
+            } catch (err) {
+                rethrow(err, __jade[0].filename, __jade[0].lineno);
+            }
+        };
+    });
+    register({
+        views: [ "./toolbox/field_section_view" ]
+    }, "views\\toolbox", function(global, module, exports, require, window) {
+        ((function() {
+            var FieldSectionView, SectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+                for (var key in parent) {
+                    if (__hasProp.call(parent, key)) child[key] = parent[key];
+                }
+                function ctor() {
+                    this.constructor = child;
+                }
+                ctor.prototype = parent.prototype;
+                child.prototype = new ctor;
+                child.__super__ = parent.prototype;
+                return child;
+            };
+            SectionView = require("./section_view");
+            module.exports = FieldSectionView = function(_super) {
+                __extends(FieldSectionView, _super);
+                function FieldSectionView() {
+                    FieldSectionView.__super__.constructor.apply(this, arguments);
+                }
+                FieldSectionView.prototype.template = require("../templates/toolbox/field");
+                return FieldSectionView;
+            }(SectionView);
+        })).call(this);
+    });
+    register({
+        "views\\toolbox": [ "../templates/toolbox/server" ]
+    }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
+        var jade = require("../../../lib/vendor/jade_runtime");
+        module.exports = function anonymous(locals, attrs, escape, rethrow) {
+            var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+            var __jade = [ {
+                lineno: 1,
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\toolbox\\server.jade"
+            } ];
+            try {
+                var buf = [];
+                with (locals || {}) {
+                    var interp;
+                    __jade.unshift({
+                        lineno: 1,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 1,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<section");
+                    buf.push(attrs({
+                        "class": "server"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 2,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<h1>" + escape((interp = name) == null ? "" : interp) + "");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</h1>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 4,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<ul>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 5,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 5,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "add"
+                    }));
+                    buf.push(">Add Database");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</ul>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</section>");
+                    __jade.shift();
+                    __jade.shift();
+                }
+                return buf.join("");
+            } catch (err) {
+                rethrow(err, __jade[0].filename, __jade[0].lineno);
+            }
+        };
+    });
+    register({
+        views: [ "./toolbox/server_section_view" ]
+    }, "views\\toolbox", function(global, module, exports, require, window) {
+        ((function() {
+            var Database, SectionView, ServerSectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+                for (var key in parent) {
+                    if (__hasProp.call(parent, key)) child[key] = parent[key];
+                }
+                function ctor() {
+                    this.constructor = child;
+                }
+                ctor.prototype = parent.prototype;
+                child.prototype = new ctor;
+                child.__super__ = parent.prototype;
+                return child;
+            };
+            Database = require("../../models/database");
+            SectionView = require("./section_view");
+            module.exports = ServerSectionView = function(_super) {
+                __extends(ServerSectionView, _super);
+                function ServerSectionView() {
+                    ServerSectionView.__super__.constructor.apply(this, arguments);
+                }
+                ServerSectionView.prototype.template = require("../templates/toolbox/server");
+                ServerSectionView.prototype.events = {
+                    "click .add": "add_database"
+                };
+                ServerSectionView.prototype.add_database = function() {
+                    var _this = this;
+                    $("#overlay").show().fadeTo(250, .5);
+                    return global.socket.request("add_database", function(err, name) {
+                        var database, node;
+                        $("#overlay").fadeTo(250, 0, function() {
+                            return $(this).hide();
+                        });
+                        if (err) return console.log(String(err));
+                        database = new Database({
+                            parent: _this.node.model,
+                            name: name
+                        });
+                        database.id = true;
+                        node = new Tree.Node(database.get("name"));
+                        node.model = database;
+                        _this.node.model.children().add(database);
+                        tree.insert_node(node, _this.node);
+                        _this.node.children.sort(function(a, b) {
+                            if (a.model.get("name") < b.model.get("name")) return -1;
+                            if (a.model.get("name") > b.model.get("name")) return +1;
+                            return 0;
+                        });
+                        tree.animate();
+                        return tree.bind_once("anim:after", function() {
+                            return _this.toolbox.graph.node_click(node);
+                        });
+                    });
+                };
+                return ServerSectionView;
+            }(SectionView);
+        })).call(this);
+    });
+    register({
+        "views\\toolbox": [ "../templates/toolbox/table" ]
+    }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
+        var jade = require("../../../lib/vendor/jade_runtime");
+        module.exports = function anonymous(locals, attrs, escape, rethrow) {
+            var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
+            var __jade = [ {
+                lineno: 1,
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\toolbox\\table.jade"
+            } ];
+            try {
+                var buf = [];
+                with (locals || {}) {
+                    var interp;
+                    __jade.unshift({
+                        lineno: 1,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 1,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<section");
+                    buf.push(attrs({
+                        "class": "table"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 2,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<h1>" + escape((interp = name) == null ? "" : interp) + "");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</h1>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 4,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<ul>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 5,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 5,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "rename"
+                    }));
+                    buf.push(">Rename");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 7,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 7,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "drop"
+                    }));
+                    buf.push(">Drop");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 9,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li>");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 9,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<a");
+                    buf.push(attrs({
+                        "class": "add"
+                    }));
+                    buf.push(">Add Field");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</ul>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</section>");
+                    __jade.shift();
+                    __jade.shift();
+                }
+                return buf.join("");
+            } catch (err) {
+                rethrow(err, __jade[0].filename, __jade[0].lineno);
+            }
+        };
+    });
+    register({
+        views: [ "./toolbox/table_section_view" ]
+    }, "views\\toolbox", function(global, module, exports, require, window) {
+        ((function() {
+            var SectionView, TableSectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+                for (var key in parent) {
+                    if (__hasProp.call(parent, key)) child[key] = parent[key];
+                }
+                function ctor() {
+                    this.constructor = child;
+                }
+                ctor.prototype = parent.prototype;
+                child.prototype = new ctor;
+                child.__super__ = parent.prototype;
+                return child;
+            };
+            SectionView = require("./section_view");
+            module.exports = TableSectionView = function(_super) {
+                __extends(TableSectionView, _super);
+                function TableSectionView() {
+                    TableSectionView.__super__.constructor.apply(this, arguments);
+                }
+                TableSectionView.prototype.template = require("../templates/toolbox/table");
+                return TableSectionView;
+            }(SectionView);
+        })).call(this);
+    });
+    register({
+        views: [ "./toolbox_view" ]
+    }, "views", function(global, module, exports, require, window) {
+        ((function() {
+            var DatabaseSectionView, FieldSectionView, ServerSectionView, TableSectionView, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+                for (var key in parent) {
+                    if (__hasProp.call(parent, key)) child[key] = parent[key];
+                }
+                function ctor() {
+                    this.constructor = child;
+                }
+                ctor.prototype = parent.prototype;
+                child.prototype = new ctor;
+                child.__super__ = parent.prototype;
+                return child;
+            };
+            DatabaseSectionView = require("./toolbox/database_section_view");
+            FieldSectionView = require("./toolbox/field_section_view");
+            ServerSectionView = require("./toolbox/server_section_view");
+            TableSectionView = require("./toolbox/table_section_view");
+            module.exports = ToolboxView = function(_super) {
+                __extends(ToolboxView, _super);
+                function ToolboxView(graph) {
+                    this.graph = graph;
+                    this.el = this.graph.$("#toolbox");
+                    ToolboxView.__super__.constructor.call(this);
+                }
+                ToolboxView.prototype.update = function(node) {
+                    var database, field, model, server, table;
+                    model = node.model;
+                    server = database = table = field = null;
+                    switch (model.constructor.name) {
+                      case "Server":
+                        server = node;
+                        break;
+                      case "Database":
+                        database = node;
+                        break;
+                      case "Table":
+                        table = node;
+                        break;
+                      case "Field":
+                        field = node;
+                    }
+                    if (field) table = field.parent;
+                    this.server = this.database = this.table = this.field = null;
+                    if (server) this.server = new ServerSectionView(this, server);
+                    if (database) this.database = new DatabaseSectionView(this, database);
+                    if (table) this.table = new TableSectionView(this, table);
+                    if (field) this.field = new FieldSectionView(this, field);
+                    return this.render();
+                };
+                ToolboxView.prototype.render = function() {
+                    var _ref, _ref2, _ref3, _ref4;
+                    this.el.html("");
+                    this.el.append((_ref = this.server) != null ? _ref.render() : void 0);
+                    this.el.append((_ref2 = this.database) != null ? _ref2.render() : void 0);
+                    this.el.append((_ref3 = this.table) != null ? _ref3.render() : void 0);
+                    return this.el.append((_ref4 = this.field) != null ? _ref4.render() : void 0);
+                };
+                return ToolboxView;
+            }(Backbone.View);
+        })).call(this);
+    });
+    register({
         views: [ "./templates/server" ]
     }, "views\\templates", function(global, module, exports, require, window) {
         var jade = require("../../lib/vendor/jade_runtime");
@@ -507,7 +1402,7 @@
                     });
                     buf.push("<div");
                     buf.push(attrs({
-                        id: "ruler"
+                        id: "overlay"
                     }));
                     buf.push(">");
                     __jade.unshift({
@@ -523,7 +1418,7 @@
                     });
                     buf.push("<div");
                     buf.push(attrs({
-                        id: "toolbox"
+                        id: "ruler"
                     }));
                     buf.push(">");
                     __jade.unshift({
@@ -535,6 +1430,22 @@
                     __jade.shift();
                     __jade.unshift({
                         lineno: 4,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<div");
+                    buf.push(attrs({
+                        id: "toolbox"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</div>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 5,
                         filename: __jade[0].filename
                     });
                     buf.push("<div");
@@ -561,11 +1472,11 @@
         };
     });
     register({
-        views: [ "./server_view" ],
-        "": [ "./views/server_view" ]
+        views: [ "./graph_view" ],
+        "": [ "./views/graph_view" ]
     }, "views", function(global, module, exports, require, window) {
         ((function() {
-            var BaseView, Server, ServerView, ToolboxView, __bind = function(fn, me) {
+            var BaseView, GraphView, Server, ToolboxView, __bind = function(fn, me) {
                 return function() {
                     return fn.apply(me, arguments);
                 };
@@ -584,28 +1495,28 @@
             BaseView = require("./base_view");
             Server = require("../models/server");
             ToolboxView = require("./toolbox_view");
-            module.exports = ServerView = function(_super) {
-                __extends(ServerView, _super);
-                ServerView.prototype.template = require("./templates/server");
-                function ServerView(on_loaded) {
+            module.exports = GraphView = function(_super) {
+                __extends(GraphView, _super);
+                GraphView.prototype.template = require("./templates/server");
+                function GraphView(on_loaded) {
                     this.on_loaded = on_loaded;
                     this.node_click = __bind(this.node_click, this);
-                    ServerView.__super__.constructor.apply(this, arguments);
+                    GraphView.__super__.constructor.apply(this, arguments);
                 }
-                ServerView.prototype.initialize = function() {
+                GraphView.prototype.initialize = function() {
                     var _this = this;
                     return global.server.fetch_children(function(err) {
                         if (err) return console.log(String(err));
                         return _this.on_loaded();
                     });
                 };
-                ServerView.prototype.render = function() {
+                GraphView.prototype.render = function() {
                     $("body").html("").append(this.el);
                     this.$ruler = this.$("#ruler");
-                    this.toolbox = new ToolboxView(this.$("#toolbox"));
+                    this.toolbox = new ToolboxView(this);
                     return this.render_graph();
                 };
-                ServerView.prototype.render_graph = function() {
+                GraphView.prototype.render_graph = function() {
                     var _this = this;
                     this.tree = new Tree($("#graph"));
                     $(global).resize(function() {
@@ -613,10 +1524,13 @@
                     });
                     this.tree.bind("node:add", function(node, context) {
                         var _ref;
-                        node.model = (_ref = context != null ? context.model.children().find({
-                            name: node.$label.text()
-                        }) : void 0) != null ? _ref : global.server;
-                        return _this.set_label_text(node.$label);
+                        if (node.model == null) {
+                            node.model = (_ref = context != null ? context.model.children().find({
+                                name: node.$label.text()
+                            }) : void 0) != null ? _ref : global.server;
+                        }
+                        _this.set_label_text(node.$label);
+                        if (!node.model.id) return node.$elem.addClass("unsaved");
                     });
                     this.tree.bind("node:remove", function(node) {
                         return delete node.model;
@@ -629,9 +1543,10 @@
                         return _this.tree.insert_node(database.get("name"), _this.tree.root);
                     });
                     this.tree.refresh();
-                    return global.tree = this.tree;
+                    global.tree = this.tree;
+                    return this.toolbox.update(this.tree.root);
                 };
-                ServerView.prototype.node_click = function(node) {
+                GraphView.prototype.node_click = function(node) {
                     var direction, path, _i, _len, _ref, _ref2;
                     if (node.$elem.hasClass("selected")) return;
                     direction = ((_ref = node.parent) != null ? _ref.$elem.hasClass("selected") : void 0) ? "down" : "up";
@@ -645,7 +1560,7 @@
                     this.tree.unbind("node:click", this.node_click);
                     return this["move_" + direction](node);
                 };
-                ServerView.prototype.move_down = function(node) {
+                GraphView.prototype.move_down = function(node) {
                     var sibling, _i, _len, _ref, _this = this;
                     _ref = node.siblings();
                     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -654,9 +1569,15 @@
                     }
                     this.tree.set_centre(node);
                     this.tree.animate();
-                    if (!node.model.children()) return this.finish_move(node);
                     return this.tree.bind_once("anim:after", function() {
+                        if (!(node.model.id && node.model.children())) {
+                            return _this.finish_move(node);
+                        }
+                        _this.$("#overlay").show().fadeTo(250, .5);
                         return node.model.fetch_children(function(err, children) {
+                            _this.$("#overlay").fadeTo(250, 0, function() {
+                                return $(this).hide();
+                            });
                             if (err) return console.log(String(err));
                             children.each(function(child) {
                                 return _this.tree.insert_node(child.get("name"), node);
@@ -668,28 +1589,35 @@
                         });
                     });
                 };
-                ServerView.prototype.move_up = function(node) {
+                GraphView.prototype.move_up = function(node) {
                     var child, only_child, _i, _len, _ref, _this = this;
                     only_child = node.children[0];
-                    _ref = only_child.children.slice(0);
-                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                        child = _ref[_i];
-                        this.tree.remove_node(child);
+                    if (only_child) {
+                        _ref = only_child.children.slice(0);
+                        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                            child = _ref[_i];
+                            this.tree.remove_node(child);
+                        }
                     }
                     this.tree.set_centre(node);
                     this.tree.animate();
                     return this.tree.bind_once("anim:after", function() {
+                        _this.$("#overlay").show().fadeTo(250, .5);
                         return node.model.fetch_children(function(err, children) {
-                            var i;
+                            _this.$("#overlay").fadeTo(250, 0, function() {
+                                return $(this).hide();
+                            });
                             if (err) return console.log(String(err));
-                            i = 0;
                             children.each(function(child) {
-                                if (child.get("name") === only_child.model.get("name")) {
-                                    i++;
-                                } else {
-                                    _this.tree.insert_node(child.get("name"), node, i);
+                                if (child.get("name") === (only_child != null ? only_child.model.get("name") : void 0)) {
+                                    return;
                                 }
-                                return i++;
+                                return _this.tree.insert_node(child.get("name"), node);
+                            });
+                            node.children.sort(function(a, b) {
+                                if (a.model.get("name") < b.model.get("name")) return -1;
+                                if (a.model.get("name") > b.model.get("name")) return +1;
+                                return 0;
                             });
                             _this.tree.animate();
                             return _this.tree.bind_once("anim:after", function() {
@@ -698,10 +1626,11 @@
                         });
                     });
                 };
-                ServerView.prototype.finish_move = function() {
-                    return this.tree.bind("node:click", this.node_click);
+                GraphView.prototype.finish_move = function(node) {
+                    this.tree.bind("node:click", this.node_click);
+                    return this.toolbox.update(node);
                 };
-                ServerView.prototype.set_label_text = function($label) {
+                GraphView.prototype.set_label_text = function($label) {
                     var label, ratio;
                     label = $label.text();
                     this.$ruler.text(label);
@@ -714,7 +1643,7 @@
                         return $label.text(label);
                     }
                 };
-                return ServerView;
+                return GraphView;
             }(BaseView);
         })).call(this);
     });
@@ -849,7 +1778,7 @@
         "": [ "./views/login_view" ]
     }, "views", function(global, module, exports, require, window) {
         ((function() {
-            var BaseView, LoginView, Server, ServerView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var BaseView, GraphView, LoginView, Server, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -862,8 +1791,8 @@
                 return child;
             };
             BaseView = require("./base_view");
+            GraphView = require("./graph_view");
             Server = require("../models/server");
-            ServerView = require("./server_view");
             module.exports = LoginView = function(_super) {
                 __extends(LoginView, _super);
                 function LoginView() {
@@ -899,7 +1828,7 @@
                             name: data.host
                         });
                         old_overflow = $("body").css("overflow");
-                        new_view = new ServerView(function() {
+                        new_view = new GraphView(function() {
                             $("body").css("overflow", "hidden");
                             _this.$("#ring").css("-webkit-animation-play-state", "paused");
                             return _this.el.addClass("leaving");
@@ -919,7 +1848,7 @@
         "": [ "app" ]
     }, "", function(global, module, exports, require, window) {
         ((function() {
-            var LoginView, Router, Server, ServerView, check_login, socket_request, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var GraphView, LoginView, Router, Server, check_login, socket_request, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -932,8 +1861,8 @@
                 return child;
             }, _this = this;
             LoginView = require("./views/login_view");
+            GraphView = require("./views/graph_view");
             Server = require("./models/server");
-            ServerView = require("./views/server_view");
             socket_request = function(request, request_data, callback) {
                 var data, _ref;
                 if (!callback) {
@@ -981,7 +1910,7 @@
                 Router.prototype.home = function() {
                     return check_login(function() {
                         var view;
-                        return view = new ServerView(function() {
+                        return view = new GraphView(function() {
                             return view.fade_in();
                         });
                     });

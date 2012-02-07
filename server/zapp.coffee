@@ -1,3 +1,4 @@
+async         = require 'async'
 {MemoryStore} = require('express').session
 mysql         = require 'mysql'
 {parseCookie} = require('connect').utils
@@ -57,22 +58,29 @@ module.exports = zapp = zappa.app ->
     console.log "   debug - received request #{util.inspect @data}"
     {id, request, request_data} = @data
     @session                    = @socket.handshake.session
+    db                          = null
     
     callback = (err, result) =>
+      db?.end()
       @emit "response_#{id}", {err, result}
+    
+    db_connect = (credentials = @session.credentials) =>
+      db = mysql.createClient credentials
+      db.on 'error', (err) ->
+        console.log String err
+        return callback err
     
     try
       switch request
         when 'login'
           # Attempt to log in to the database server with given credentials
-          db = mysql.createClient request_data
+          db_connect request_data
           db.query 'show databases', (err) =>
             return callback err if err
             @session.credentials = request_data
             @session.save (err) =>
               return callback err if err
               callback null, null
-          db.end (err) -> console.log String err if err
         
         when 'check_login'
           # See if the client is logged in
@@ -85,30 +93,28 @@ module.exports = zapp = zappa.app ->
         
         when 'get_databases'
           # Get an array of database on the server
-          db = mysql.createClient @session.credentials
+          db_connect()
           db.query 'show databases', (err, results) ->
             return callback err if err
             callback null, ({name : result.Database} for result in results)
-          db.end (err) -> console.log String err if err
         
         when 'get_tables'
           # Get an array of tables in a database
           {database} = request_data
           
-          db = mysql.createClient @session.credentials
-          db.query "use #{database}"
+          db_connect()
+          db.query "use `#{database}`"
           db.query 'show tables', (err, results) ->
             return callback err if err
             callback null, ({name : result["Tables_in_#{database}"]} for result in results)
-          db.end (err) -> console.log String err if err
         
         when 'get_fields'
           # Get an array of fields in a table
           {database, table} = request_data
           
-          db = mysql.createClient @session.credentials
-          db.query "use #{database}"
-          db.query "describe #{table}", (err, results) ->
+          db_connect()
+          db.query "use `#{database}`"
+          db.query "describe `#{table}`", (err, results) ->
             return callback err if err
             
             # Fields need a bit of processing...
@@ -127,11 +133,50 @@ module.exports = zapp = zappa.app ->
                   else 'false'
               }
             callback null, fields
-          db.end (err) -> console.log String err if err
         
-        when 'save_table'
-          # Save the current properties of a table to the database
-          console.log request
+        when 'add_database'
+          # Create a new database with a unique name
+          db_connect()
+          i  = 0
+          db.query 'show databases', (err, results) ->
+            return callback err if err
+            for result in results
+              if match = result.Database.match /new database \((\d+)\)/i
+                i = match[1]
+            name = "new database (#{i + 1})"
+            db.query "create database `#{name}`", (err, results) ->
+              return callback err if err
+              callback null, name
+        
+        when 'rename_database'
+          # Rename a given database
+          {old_name, new_name} = request_data
+          db_connect()
+          
+          # First create the new database
+          db.query "create database `#{new_name}`"
+          
+          # Rename all the old database's tables
+          db.query "use `#{old_name}`"
+          db.query 'show tables', (err, results) ->
+            return callback err if err
+            async.forEach results, (result, done) ->
+              table = result["Tables_in_#{old_name}"]
+              db.query "rename table `#{old_name}`.`#{table}` to `#{new_name}`.`#{table}`", (err) ->
+                done err
+            , (err) ->
+              return callback err if err
+              db.query "drop database `#{old_name}`", (err) ->
+                return callback err if err
+                callback null, null
+        
+        when 'drop_database'
+          # Drop the given database
+          {database} = request_data
+          db_connect()
+          db.query "drop database `#{database}`", (err) ->
+            return callback err if err
+            callback null, null
         
         else
           throw new Error "cannot handle request: #{request}"

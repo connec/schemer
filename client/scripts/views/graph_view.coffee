@@ -2,7 +2,7 @@ BaseView    = require './base_view'
 Server      = require '../models/server'
 ToolboxView = require './toolbox_view'
 
-module.exports = class ServerView extends BaseView
+module.exports = class GraphView extends BaseView
   ###
   The template for this view.
   ###
@@ -28,7 +28,7 @@ module.exports = class ServerView extends BaseView
   render: ->
     $('body').html('').append @el
     @$ruler  = @$('#ruler')
-    @toolbox = new ToolboxView @$('#toolbox')
+    @toolbox = new ToolboxView @
     @render_graph()
   
   ###
@@ -43,10 +43,13 @@ module.exports = class ServerView extends BaseView
     
     @tree.bind 'node:add', (node, context) =>
       # Attach the model represented by the node
-      node.model = context?.model.children().find(name: node.$label.text()) ? global.server
+      node.model ?= context?.model.children().find(name: node.$label.text()) ? global.server
       
       # Fix the label
       @set_label_text node.$label
+      
+      # Add a class if the node's model is not saved
+      node.$elem.addClass 'unsaved' unless node.model.id
     
     @tree.bind 'node:remove', (node) ->
       # Remove the model property
@@ -64,8 +67,8 @@ module.exports = class ServerView extends BaseView
       @tree.insert_node database.get('name'), @tree.root
     
     # Refresh the visualisation
-    @tree.refresh()
-    global.tree = @tree
+    @tree.refresh(); global.tree = @tree
+    @toolbox.update @tree.root
   
   ###
   Handler for clicks on nodes.
@@ -98,9 +101,11 @@ module.exports = class ServerView extends BaseView
     @tree.animate()
     
     # After the animation, add all the new node's children
-    return @finish_move node unless node.model.children()
     @tree.bind_once 'anim:after', =>
+      return @finish_move node unless node.model.id and node.model.children()
+      @$('#overlay').show().fadeTo 250, 0.5
       node.model.fetch_children (err, children) =>
+        @$('#overlay').fadeTo 250, 0, -> $(@).hide()
         return console.log String err if err
         children.each (child) =>
           @tree.insert_node child.get('name'), node
@@ -114,30 +119,36 @@ module.exports = class ServerView extends BaseView
     only_child = node.children[0]
     
     # First, remove all grand-children
-    @tree.remove_node child for child in only_child.children[0..]
+    if only_child
+      @tree.remove_node child for child in only_child.children[0..]
     @tree.set_centre node
     @tree.animate()
     
     # After the animation, add in all the direct children
     @tree.bind_once 'anim:after', =>
+      @$('#overlay').show().fadeTo 250, 0.5
       node.model.fetch_children (err, children) =>
+        @$('#overlay').fadeTo 250, 0, -> $(@).hide()
         return console.log String err if err
-        i = 0
         children.each (child) =>
-          if child.get('name') == only_child.model.get('name')
-            i++
-          else
-            @tree.insert_node child.get('name'), node, i
-          i++
+          return if child.get('name') == only_child?.model.get('name')
+          @tree.insert_node child.get('name'), node
+        node.children.sort (a, b)->
+          return -1 if a.model.get('name') < b.model.get('name')
+          return +1 if a.model.get('name') > b.model.get('name')
+          return 0
         @tree.animate()
         @tree.bind_once 'anim:after', => @finish_move node
   
   ###
   Tidies up after a move has been completed.
   ###
-  finish_move: ->
+  finish_move: (node) ->
     # Rebind the click handler
     @tree.bind 'node:click', @node_click
+    
+    # Update the toolbox
+    @toolbox.update node
   
   ###
   Shorten a node's name inline with the node width.

@@ -1,6 +1,6 @@
-LoginView      = require './views/login_view'
-Server         = require './models/server'
-ServerView     = require './views/server_view'
+LoginView = require './views/login_view'
+GraphView = require './views/graph_view'
+Server    = require './models/server'
 
 ###
 The `socket_request` protocol provides an abstraction above typical send/receive
@@ -58,7 +58,7 @@ class Router extends Backbone.Router
   ###
   home: ->
     check_login ->
-      view = new ServerView ->
+      view = new GraphView ->
         view.fade_in()
   
   ###

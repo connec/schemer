@@ -8,7 +8,7 @@ module.exports = class BaseView extends Backbone.View
   ###
   constructor: ->
     @el = $ @template()
-    super
+    super()
   
   ###
   Renders the element and fades it in.

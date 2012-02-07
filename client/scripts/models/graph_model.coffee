@@ -12,6 +12,9 @@ module.exports = class GraphModel extends Backbone.Model
       node_id  : "#{@get('parent')?.get('node_id') ? ''}/#{@get 'name'}"
       children : if @Children? then new @Children @ else null
   
+  parent: ->
+    @get 'parent'
+  
   children: ->
     @get 'children'
   
