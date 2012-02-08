@@ -4,19 +4,17 @@
   "author"      : "Chris Connelly",
   "version"     : "0.0.1-pre",
   "dependencies": {
-    "backbone"      : ">= 0.5.3",
-    "coffee-script" : ">= 1.2.0",
-    "connect"       : ">= 1.8.5",
-    "express"       : ">= 2.5.5",
-    "jade"          : ">= 0.20.0",
-    "mysql"         : ">= 0.9.5",
-    "nib"           : ">= 0.3.1",
-    "stylus"        : ">= 0.21.2",
-    "underscore"    : ">= 1.2.3",
-    "yaml-js"       : ">= 0.0.2",
-    "zappa"         : ">= 0.3.3"
+    "async":   ">= 0.1.15",
+    "connect": ">= 1.8.5",
+    "express": ">= 2.5.5",
+    "jade":    ">= 0.20.0",
+    "mysql":   ">= 0.9.5",
+    "zappa":   ">= 0.3.3"
   },
   "devDependencies": {
-    "squash": ">= 0.0.9"
+    "coffee-script": ">= 1.2.0",
+    "nib":           ">= 0.3.1",
+    "squash":        ">= 0.0.9",
+    "stylus":        ">= 0.21.2"
   }
 }
