@@ -1,18 +1,22 @@
-async         = require 'async'
 {MemoryStore} = require('express').session
-mysql         = require 'mysql'
 {parseCookie} = require('connect').utils
+SocketRequest = require './socket_request'
 {Session}     = require('connect').middleware.session
 util          = require 'util'
 zappa         = require 'zappa'
 
 # Instantiate the Zappa server
 module.exports = zapp = zappa.app ->
+  # Specify the session store manually so we can access it in listeners
   session_store = new MemoryStore()
   
   @set {
     # Use Jade for templating
     'view engine': 'jade'
+    
+    # Change the 'views' dir to point to 'templates' to avoid confusion with
+    # Backbone's views
+    'views': "#{__dirname}/templates"
   }
   
   @use {
@@ -39,7 +43,7 @@ module.exports = zapp = zappa.app ->
   @io.set 'authorization', (data, accept) ->
     # Check a cookie actually exists
     unless data.headers.cookie
-      return accept 'No cookie transmitted', false
+      return accept new Error('No cookie transmitted'), false
     
     # Gather relevant session data
     data.cookie       = parseCookie data.headers.cookie
@@ -48,7 +52,7 @@ module.exports = zapp = zappa.app ->
     
     # Load the session
     session_store.get data.sessionID, (err, session) ->
-      return accept 'Error retrieving session', false if err
+      return accept new Error('Error retrieving session'), false if err
       
       data.session = new Session data, session
       accept null, true
@@ -56,157 +60,12 @@ module.exports = zapp = zappa.app ->
   # Handles 'socket requests'
   @on request: ->
     console.log "   debug - received request #{util.inspect @data}"
-    {id, request, request_data} = @data
-    @session                    = @socket.handshake.session
-    db                          = null
-    
-    callback = (err, result) =>
-      db?.end()
-      @emit "response_#{id}", {err, result}
-    
-    db_connect = (credentials = @session.credentials) =>
-      db = mysql.createClient credentials
-      db.on 'error', (err) ->
-        console.log String err
-        return callback err
-    
-    try
-      switch request
-        when 'login'
-          # Attempt to log in to the database server with given credentials
-          db_connect request_data
-          db.query 'show databases', (err) =>
-            return callback err if err
-            @session.credentials = request_data
-            @session.save (err) =>
-              return callback err if err
-              callback null, null
-        
-        when 'check_login'
-          # See if the client is logged in
-          if @session.credentials?
-            callback null, 
-              host : @session.credentials.host
-              user : @session.credentials.user
-          else
-            callback null, false
-        
-        when 'get_databases'
-          # Get an array of database on the server
-          db_connect()
-          db.query 'show databases', (err, results) ->
-            return callback err if err
-            callback null, ({name : result.Database} for result in results)
-        
-        when 'get_tables'
-          # Get an array of tables in a database
-          {database} = request_data
-          
-          db_connect()
-          db.query "use `#{database}`"
-          db.query 'show tables', (err, results) ->
-            return callback err if err
-            callback null, ({name : result["Tables_in_#{database}"]} for result in results)
-        
-        when 'get_fields'
-          # Get an array of fields in a table
-          {database, table} = request_data
-          
-          db_connect()
-          db.query "use `#{database}`"
-          db.query "describe `#{table}`", (err, results) ->
-            return callback err if err
-            
-            # Fields need a bit of processing...
-            fields = results.map (result) ->
-              {
-                name           : result.Field
-                type           : result.Type.match(/(.*?)(\(|$)/)[1]
-                length         : result.Type.match(/\((.*)\)/)?[1]
-                nullable       : if result.Null is 'NO' then no else yes
-                default        : result.Default
-                auto_increment : if result.Extra.match /auto_increment/ then yes else no
-                key            : switch result.Key
-                  when 'PRI' then 'primary'
-                  when 'UNI' then 'unique'
-                  when 'MUL' then 'index'
-                  else 'false'
-              }
-            callback null, fields
-        
-        when 'add_database'
-          # Create a new database with a unique name
-          db_connect()
-          i  = 0
-          db.query 'show databases', (err, results) ->
-            return callback err if err
-            for result in results
-              if match = result.Database.match /new database \((\d+)\)/i
-                i = match[1]
-            name = "new database (#{i + 1})"
-            db.query "create database `#{name}`", (err, results) ->
-              return callback err if err
-              callback null, name
-        
-        when 'rename_database'
-          # Rename a given database
-          {old_name, new_name} = request_data
-          db_connect()
-          
-          # First create the new database
-          db.query "create database `#{new_name}`"
-          
-          # Rename all the old database's tables
-          db.query "use `#{old_name}`"
-          db.query 'show tables', (err, results) ->
-            return callback err if err
-            async.forEach results, (result, done) ->
-              table = result["Tables_in_#{old_name}"]
-              db.query "rename table `#{old_name}`.`#{table}` to `#{new_name}`.`#{table}`", (err) ->
-                done err
-            , (err) ->
-              return callback err if err
-              db.query "drop database `#{old_name}`", (err) ->
-                return callback err if err
-                callback null, null
-        
-        when 'drop_database'
-          # Drop the given database
-          {database} = request_data
-          db_connect()
-          db.query "drop database `#{database}`", (err) ->
-            return callback err if err
-            callback null, null
-        
-        else
-          throw new Error "cannot handle request: #{request}"
-    catch err
-      callback err
+    request = new SocketRequest @socket
+    request.dispatch @data
   
   # The only HTTP response - renders the layout
   @get '/' : ->
     @render 'layout', layout: false
-  
-  # The layout for the application
-  @view layout: '''
-    doctype 5
-    html
-      head
-        meta(charset='utf-8')
-        
-        title Honours
-        
-        link(href='styles/app.css', rel='stylesheet')
-        script(src='/scripts/lib/vendor/jquery.js')
-        script(src='/scripts/lib/vendor/underscore.js')
-        script(src='/scripts/lib/vendor/backbone.js')
-        script(src='/scripts/lib/vendor/socket.io.js')
-        script(src='/scripts/lib/vendor/async.js')
-        script(src='/scripts/lib/vendor/tree/lib/tree.js')
-        script(src='scripts/app.js')
-      
-      body
-  '''
 
 # Attach a method to start the server
 zapp.start = (port = 3000) ->

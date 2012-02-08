@@ -6,6 +6,10 @@ zapp         = require './server/zapp'
 # The port to listen on
 port = 3000
 
+# Add a handler for uncaught exceptions, so the script keeps running
+process.on 'uncaughtException', (err) ->
+  console.log "Uncaught Exception:\n  #{err.stack}"
+
 # Watch the server directory for changes
 server_timer = null
 fs.watch 'server', (event) ->
