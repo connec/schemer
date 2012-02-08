@@ -1,44 +1,26 @@
-LoginView = require './views/login_view'
-GraphView = require './views/graph_view'
-Server    = require './models/server'
+LoginView  = require './views/login'
+ServerView = require './views/server'
+
+# Include supporting jQuery plugins
+require '../lib/support'
 
 ###
 The `socket_request` protocol provides an abstraction above typical send/receive
 socket communications allowing convenient, unique request/response exchanges.
 ###
-socket_request = (request, request_data, callback) ->
-  [request_data, callback] = [null, request_data] unless callback
+socket_request = (request, request_data, callback = request_data) ->
+  request_data = null if request_data == callback
   
-  data = {
-    id: _.uniqueId 'request_'
-    request
-    request_data
-  }
+  data =
+    id:           _.uniqueId 'request_'
+    request:      request
+    request_data: request_data
   
   @once "response_#{data.id}", ({err, result}) ->
-    if err
-      error = new Error
-      error[k] = v for k, v of err
-      return callback error
+    return callback $.extend (new Error), err if err
     return callback null, result
   
   @emit 'request', data
-
-###
-Convenience method - checks if the client is logged in, and executes the given
-callback if so.  Otherwise, redirects to the login page.
-###
-check_login = (callback) ->
-  # Send a check_login request over the socket
-  global.socket.request 'check_login', (err, response) ->
-    return console.log String err if err
-    return global.router.navigate '/login', true unless response
-    
-    # Instantiate the server object if login was successful
-    global.server = new Server name: response.host
-    
-    # Execute the success callback
-    callback()
 
 ###
 The Router class deals with mapping hash fragments to actions.
@@ -57,31 +39,33 @@ class Router extends Backbone.Router
   the login page otherwise.
   ###
   home: ->
-    check_login ->
-      view = new GraphView ->
-        view.fade_in()
+    socket.request 'check_login', (err, response) =>
+      return console.log err.stack if err
+      return @navigate '/login', true unless response
+      
+      new ServerView(@).fade_in()
   
   ###
   The `login` action creates and displays the login page.
   ###
   login: ->
-    view = new LoginView
-    view.fade_in()
+    new LoginView(@).fade_in()
 
 ###
 Kick everything off once the DOM has loaded.
 ###
-jQuery =>
+jQuery ->
   # Initialise key global objects
   global.socket = io.connect()
-  global.router = new Router
   
   # Attach the socket_request method to the socket object
-  global.socket.request = socket_request.bind global.socket
+  socket.request = socket_request.bind global.socket
+  
+  # Initialise the router object
+  router = new Router
   
   # Make sure the hash is at least '/'
-  if global.location.hash.length < 2
-    global.location.hash = '#/'
+  location.hash = '#/' if location.hash.length < 2
   
   # Start tracking hash navigation events
   Backbone.history.start()

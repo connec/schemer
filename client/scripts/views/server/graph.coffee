@@ -1,74 +1,55 @@
-BaseView    = require './base_view'
 Server      = require '../models/server'
-ToolboxView = require './toolbox_view'
+ToolboxView = require './toolbox'
 
-module.exports = class GraphView extends BaseView
-  ###
-  The template for this view.
-  ###
-  template: require './templates/server'
-  
+module.exports = class GraphView extends Backbone.View
   ###
   Constructs the view.
   ###
-  constructor: (@on_loaded) ->
-    super
+  constructor: (@el) ->
+    super()
   
   ###
   Builds the server tree for the visualisation.
   ###
   initialize: ->
-    global.server.fetch_children (err) =>
-      return console.log String err if err
-      @on_loaded()
-  
-  ###
-  Renders the element to the page.
-  ###
-  render: ->
-    $('body').html('').append @el
-    @$ruler  = @$('#ruler')
-    @toolbox = new ToolboxView @
-    @render_graph()
-  
-  ###
-  Setup and render the graph.
-  ###
-  render_graph: ->
-    # Create a spacetree visualisation
-    @tree = new Tree $('#graph')
+    # Create a 'ruler' div for measuring labels
+    @$ruler = $('<div/>').attr(id: 'ruler').appendTo @el
     
-    $(global).resize =>
+    # Construct the Tree representing the visualisation
+    @tree = new Tree @el
+    @tree.bind 'node:add', @node_add.bind @
+    @tree.bind 'node:click', @node_click.bind @
+    @tree.bind 'node:remove', @node_remove.bind @
+    
+    # Load the server details
+    socket.request 'get_server', (err, server) =>
+      throw err if err
+      
+      # Prepare the root of the tree
+      @tree.set_root server.name
+      @tree.root.model = new Server server
+      @tree.set_centre @tree.root
       @tree.refresh()
-    
-    @tree.bind 'node:add', (node, context) =>
-      # Attach the model represented by the node
-      node.model ?= context?.model.children().find(name: node.$label.text()) ? global.server
       
-      # Fix the label
-      @set_label_text node.$label
-      
-      # Add a class if the node's model is not saved
-      node.$elem.addClass 'unsaved' unless node.model.id
+      # Simulate a click on the root to display the database
+      @node_click @tree.root
+  
+  ###
+  Called when a new node is added to the tree.
+  ###
+  node_add: (node, context) ->
+    # Try and find the model represented by this node
+    node.model ?= context?.model.children().find name: node.$label.text()
     
-    @tree.bind 'node:remove', (node) ->
-      # Remove the model property
-      delete node.model
-    
-    @tree.bind 'node:click', @node_click
-    
-    # Initialise the root of the tree
-    @tree.set_root global.server.get 'name'
-    @tree.root.$elem.addClass 'in-path selected'
-    @tree.set_centre @tree.root
-    
-    # Add the databases to the tree
-    global.server.children().each (database) =>
-      @tree.insert_node database.get('name'), @tree.root
-    
-    # Refresh the visualisation
-    @tree.refresh(); global.tree = @tree
-    @toolbox.update @tree.root
+    # Adjust the label text so it fits in the node
+    @set_label_text node.$label
+  
+  ###
+  Called when a node is removed from the tree.
+  ###
+  node_remove: (node) ->
+    # Remove the model property
+    delete node.model
   
   ###
   Handler for clicks on nodes.

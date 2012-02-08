@@ -1,4 +1,4 @@
-module.exports = class SectionView extends Backbone.View
+module.exports = class Section extends Backbone.View
   
   ###
   Construct the view.

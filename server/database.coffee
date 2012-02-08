@@ -26,29 +26,34 @@ module.exports = class Database
   Convenience method to get an array of the databases on the server.
   ###
   get_databases: (callback) ->
-    @query 'show databases', (err, results) ->
+    @query 'show databases', (err, results) =>
       return callback err if err
-      return callback null, ({name: result.Database} for result in results)
+      return callback null, results.map (result) =>
+        id:   "#{@client.host}/#{result.Database}"
+        name: result.Database
   
   ###
   Convenience method to get an array of the tables in a database.
   ###
   get_tables: (database, callback) ->
     @use database, (err) -> callback err if err
-    @query 'show tables', (err, results) ->
+    @query 'show tables', (err, results) =>
       return callback err if err
-      return callback null, ({name: result["Tables_in_#{database}"]} for result in results)
+      return callback null, results.map (result) =>
+        id:   "#{@client.host}/#{database}/#{result["Tables_in_#{database}"]}"
+        name: result["Tables_in_#{database}"]
   
   ###
   Convenience method to get an array of the fields of a table.
   ###
   get_fields: (database, table, callback) ->
     @use database, (err) -> callback err if err
-    @query "describe `#{table}`", (err, results) ->
+    @query "describe `#{table}`", (err, results) =>
       return callback err if err
       
       # Fields need a bit of processing...
-      fields = results.map (result) ->
+      fields = results.map (result) =>
+        id:      "#{@client.host}/#{database}/#{table}/#{result.Field}"
         name:    result.Field
         type:    result.Type.match(/(.*?)(\(|$)/)[1]
         length:  result.Type.match(/\((.*)\)/)?[1]
@@ -66,7 +71,11 @@ module.exports = class Database
   Convenience method to create a database on the server with given name.
   ###
   create_database: (name, callback) ->
-    @query "create database `#{name}`", callback
+    @query "create database `#{name}`", (err) =>
+      return callback err if err
+      return callback null,
+        id:   "#{@client.host}/#{name}"
+        name: name
   
   ###
   Convenience method to drop a database with given name.
@@ -88,10 +97,18 @@ module.exports = class Database
           @rename_table old_name, name, new_name, name, done
         , (err) =>
           return callback err if err
-          @drop_database old_name, callback
+          @drop_database old_name, (err) =>
+            return callback err if err
+            return callback null,
+              id:   "#{@client.host}/#{new_name}"
+              name: new_name
   
   ###
   Convenience method to rename a table.
   ###
   rename_table: (old_db, old_name, new_db, new_name, callback) ->
-    @query "rename table `#{old_db}`.`#{old_name}` to `#{new_db}`.`#{new_name}`", callback
+    @query "rename table `#{old_db}`.`#{old_name}` to `#{new_db}`.`#{new_name}`", (err) =>
+      return callback err if err
+      return callback null,
+        id:   "#{@client.host}/#{new_db}/#{new_name}"
+        name: new_name

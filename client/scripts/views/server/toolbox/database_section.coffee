@@ -1,6 +1,6 @@
-SectionView = require './section_view'
+Section = require './section'
 
-module.exports = class DatabaseSectionView extends SectionView
+module.exports = class DatabaseSection extends Section
   
   ###
   The template for this section.
@@ -33,9 +33,14 @@ module.exports = class DatabaseSectionView extends SectionView
     rename = (e) =>
       return if e.type is 'keypress' and e.which isnt 13
       
-      $('#overlay').show().fadeTo 250, 0.5
       new_name = $input.val().toLowerCase()
+      if new_name == @node.model.get 'name'
+        # Do nothing if the name hasn't changed
+        @node.$label.text new_name
+        return
+      
       $input.val new_name
+      $('#overlay').show().fadeTo 250, 0.5
       global.socket.request 'rename_database', {old_name: @node.model.get('name'), new_name}, (err) =>
         $('#overlay').fadeTo 250, 0, -> $(@).hide()
         return console.log String err if err

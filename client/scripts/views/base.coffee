@@ -6,9 +6,15 @@ module.exports = class BaseView extends Backbone.View
   ###
   Construct the view.
   ###
-  constructor: ->
+  constructor: (@router) ->
     @el = $ @template()
     super()
+  
+  ###
+  Renders the view to the page.
+  ###
+  render: ->
+    $('body').html('').append @el
   
   ###
   Renders the element and fades it in.

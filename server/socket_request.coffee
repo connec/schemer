@@ -49,9 +49,7 @@ module.exports = class SocketRequest
   ###
   check_login: ->
     return @respond null, false unless @session.credentials
-    return @respond null,
-      host: @session.credentials.host
-      user: @session.credentials.user
+    return @respond null, true
   
   ###
   Attempts to login to the database with given credentials and, if successful,
@@ -65,6 +63,16 @@ module.exports = class SocketRequest
       @session.save (err) =>
         return @respond err if err
         return @respond()
+  
+  ###
+  Gets the server information.
+  ###
+  get_server: ->
+    @respond new Error 'not authorised' unless @session.credentials
+    @respond null,
+      id:   @database.client.host
+      name: @database.client.host
+      user: @database.client.user
   
   ###
   Gets the database on the server, in the format expected by the Database model.
@@ -91,9 +99,10 @@ module.exports = class SocketRequest
     i = 0
     @database.get_databases (err, databases) =>
       return @respond err if err
+      
       for {name} in databases
         i = match[1] if match = name.match /new database \((\d+)\)/i
-      name = "new database (#{i + 1})"
+      name = "new database (#{++i})"
       @database.create_database name, (err) =>
         return @respond err if err
         return @respond null, name

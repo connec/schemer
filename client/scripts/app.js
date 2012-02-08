@@ -43,7 +43,8 @@
         return console.log(String(new Error("Could not find module `" + file + "` from `" + from + "`")));
     };
     register({
-        views: [ "./base_view" ]
+        "views\\login": [ "../base" ],
+        "views\\server": [ "../base" ]
     }, "views", function(global, module, exports, require, window) {
         ((function() {
             var BaseView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
@@ -60,10 +61,14 @@
             };
             module.exports = BaseView = function(_super) {
                 __extends(BaseView, _super);
-                function BaseView() {
+                function BaseView(router) {
+                    this.router = router;
                     this.el = $(this.template());
                     BaseView.__super__.constructor.call(this);
                 }
+                BaseView.prototype.render = function() {
+                    return $("body").html("").append(this.el);
+                };
                 BaseView.prototype.fade_in = function(duration) {
                     if (duration == null) duration = 500;
                     this.el.fadeTo(0, 0);
@@ -93,10 +98,8 @@
             module.exports = GraphModel = function(_super) {
                 __extends(GraphModel, _super);
                 function GraphModel() {
-                    var _ref, _ref2;
                     GraphModel.__super__.constructor.apply(this, arguments);
                     this.set({
-                        node_id: "" + ((_ref = (_ref2 = this.get("parent")) != null ? _ref2.get("node_id") : void 0) != null ? _ref : "") + "/" + this.get("name"),
                         children: this.Children != null ? new this.Children(this) : null
                     });
                 }
@@ -161,15 +164,10 @@
                         data.database = this.parent.get("name");
                     }
                     return global.socket.request("get_" + this.constructor.name.toLowerCase(), data, function(err, models) {
-                        var model, _i, _j, _len, _len2;
+                        var model, _i, _len;
                         if (err) return error(null, err);
                         for (_i = 0, _len = models.length; _i < _len; _i++) {
                             model = models[_i];
-                            model.id = true;
-                            model.parent = _this.parent;
-                        }
-                        for (_j = 0, _len2 = models.length; _j < _len2; _j++) {
-                            model = models[_j];
                             model.parent = _this.parent;
                         }
                         _this.add(models);
@@ -306,7 +304,7 @@
     });
     register({
         collections: [ "../models/database" ],
-        "views\\toolbox": [ "../../models/database" ]
+        "views\\server\\toolbox": [ "../../../models/database" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
             var Database, GraphModel, Tables, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
@@ -362,8 +360,7 @@
         })).call(this);
     });
     register({
-        views: [ "../models/server" ],
-        "": [ "./models/server" ]
+        "views\\server": [ "../models/server" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
             var Databases, GraphModel, Server, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
@@ -382,23 +379,19 @@
             GraphModel = require("./graph_model");
             module.exports = Server = function(_super) {
                 __extends(Server, _super);
-                Server.prototype.Children = Databases;
                 function Server() {
                     Server.__super__.constructor.apply(this, arguments);
-                    this.set({
-                        id: true,
-                        node_id: this.get("name")
-                    });
                 }
+                Server.prototype.Children = Databases;
                 return Server;
             }(GraphModel);
         })).call(this);
     });
     register({
-        "views\\toolbox": [ "./section_view" ]
-    }, "views\\toolbox", function(global, module, exports, require, window) {
+        "views\\server\\toolbox": [ "./section" ]
+    }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var SectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Section, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -410,20 +403,20 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            module.exports = SectionView = function(_super) {
-                __extends(SectionView, _super);
-                function SectionView(toolbox, node) {
+            module.exports = Section = function(_super) {
+                __extends(Section, _super);
+                function Section(toolbox, node) {
                     this.toolbox = toolbox;
                     this.node = node;
                     this.el = $(this.template({
                         name: this.node.model.get("name")
                     }));
-                    SectionView.__super__.constructor.call(this);
+                    Section.__super__.constructor.call(this);
                 }
-                SectionView.prototype.render = function() {
+                Section.prototype.render = function() {
                     return this.el;
                 };
-                return SectionView;
+                return Section;
             }(Backbone.View);
         })).call(this);
     });
@@ -484,7 +477,7 @@
         };
     });
     register({
-        "views\\toolbox": [ "../templates/toolbox/database" ]
+        "views\\server\\toolbox": [ "../templates/toolbox/database" ]
     }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
         var jade = require("../../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
@@ -634,10 +627,10 @@
         };
     });
     register({
-        views: [ "./toolbox/database_section_view" ]
-    }, "views\\toolbox", function(global, module, exports, require, window) {
+        "views\\server\\toolbox": [ "./database_section" ]
+    }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var DatabaseSectionView, SectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var DatabaseSection, Section, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -649,18 +642,18 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            SectionView = require("./section_view");
-            module.exports = DatabaseSectionView = function(_super) {
-                __extends(DatabaseSectionView, _super);
-                function DatabaseSectionView() {
-                    DatabaseSectionView.__super__.constructor.apply(this, arguments);
+            Section = require("./section");
+            module.exports = DatabaseSection = function(_super) {
+                __extends(DatabaseSection, _super);
+                function DatabaseSection() {
+                    DatabaseSection.__super__.constructor.apply(this, arguments);
                 }
-                DatabaseSectionView.prototype.template = require("../templates/toolbox/database");
-                DatabaseSectionView.prototype.events = {
+                DatabaseSection.prototype.template = require("../templates/toolbox/database");
+                DatabaseSection.prototype.events = {
                     "click .drop": "drop_database",
                     "click .rename": "rename_database"
                 };
-                DatabaseSectionView.prototype.drop_database = function() {
+                DatabaseSection.prototype.drop_database = function() {
                     var _this = this;
                     $("#overlay").show().fadeTo(250, .5);
                     return global.socket.request("drop_database", {
@@ -676,14 +669,18 @@
                         return _this.toolbox.graph.node_click(parent);
                     });
                 };
-                DatabaseSectionView.prototype.rename_database = function() {
+                DatabaseSection.prototype.rename_database = function() {
                     var $input, rename, _this = this;
                     rename = function(e) {
                         var new_name;
                         if (e.type === "keypress" && e.which !== 13) return;
-                        $("#overlay").show().fadeTo(250, .5);
                         new_name = $input.val().toLowerCase();
+                        if (new_name === _this.node.model.get("name")) {
+                            _this.node.$label.text(new_name);
+                            return;
+                        }
                         $input.val(new_name);
+                        $("#overlay").show().fadeTo(250, .5);
                         return global.socket.request("rename_database", {
                             old_name: _this.node.model.get("name"),
                             new_name: new_name
@@ -705,12 +702,12 @@
                         value: this.node.model.get("name")
                     }).appendTo(this.node.$label).focus().select().bind("blur", rename).bind("keypress", rename);
                 };
-                return DatabaseSectionView;
-            }(SectionView);
+                return DatabaseSection;
+            }(Section);
         })).call(this);
     });
     register({
-        "views\\toolbox": [ "../templates/toolbox/field" ]
+        "views\\server\\toolbox": [ "../templates/toolbox/field" ]
     }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
         var jade = require("../../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
@@ -944,10 +941,10 @@
         };
     });
     register({
-        views: [ "./toolbox/field_section_view" ]
-    }, "views\\toolbox", function(global, module, exports, require, window) {
+        "views\\server\\toolbox": [ "./field_section" ]
+    }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var FieldSectionView, SectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var FieldSection, Section, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -959,19 +956,19 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            SectionView = require("./section_view");
-            module.exports = FieldSectionView = function(_super) {
-                __extends(FieldSectionView, _super);
-                function FieldSectionView() {
-                    FieldSectionView.__super__.constructor.apply(this, arguments);
+            Section = require("./section");
+            module.exports = FieldSection = function(_super) {
+                __extends(FieldSection, _super);
+                function FieldSection() {
+                    FieldSection.__super__.constructor.apply(this, arguments);
                 }
-                FieldSectionView.prototype.template = require("../templates/toolbox/field");
-                return FieldSectionView;
-            }(SectionView);
+                FieldSection.prototype.template = require("../templates/toolbox/field");
+                return FieldSection;
+            }(Section);
         })).call(this);
     });
     register({
-        "views\\toolbox": [ "../templates/toolbox/server" ]
+        "views\\server\\toolbox": [ "../templates/toolbox/server" ]
     }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
         var jade = require("../../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
@@ -1065,10 +1062,10 @@
         };
     });
     register({
-        views: [ "./toolbox/server_section_view" ]
-    }, "views\\toolbox", function(global, module, exports, require, window) {
+        "views\\server\\toolbox": [ "./server_section" ]
+    }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var Database, SectionView, ServerSectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Database, Section, ServerSection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1080,22 +1077,22 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            Database = require("../../models/database");
-            SectionView = require("./section_view");
-            module.exports = ServerSectionView = function(_super) {
-                __extends(ServerSectionView, _super);
-                function ServerSectionView() {
-                    ServerSectionView.__super__.constructor.apply(this, arguments);
+            Database = require("../../../models/database");
+            Section = require("./section");
+            module.exports = ServerSection = function(_super) {
+                __extends(ServerSection, _super);
+                function ServerSection() {
+                    ServerSection.__super__.constructor.apply(this, arguments);
                 }
-                ServerSectionView.prototype.template = require("../templates/toolbox/server");
-                ServerSectionView.prototype.events = {
+                ServerSection.prototype.template = require("../templates/toolbox/server");
+                ServerSection.prototype.events = {
                     "click .add": "add_database"
                 };
-                ServerSectionView.prototype.add_database = function() {
+                ServerSection.prototype.add_database = function() {
                     var _this = this;
                     $("#overlay").show().fadeTo(250, .5);
-                    return global.socket.request("add_database", function(err, name) {
-                        var database, node;
+                    return socket.request("add_database", function(err, name) {
+                        var database, node, tree;
                         $("#overlay").fadeTo(250, 0, function() {
                             return $(this).hide();
                         });
@@ -1108,6 +1105,7 @@
                         node = new Tree.Node(database.get("name"));
                         node.model = database;
                         _this.node.model.children().add(database);
+                        tree = _this.toolbox.graph.tree;
                         tree.insert_node(node, _this.node);
                         _this.node.children.sort(function(a, b) {
                             if (a.model.get("name") < b.model.get("name")) return -1;
@@ -1120,12 +1118,12 @@
                         });
                     });
                 };
-                return ServerSectionView;
-            }(SectionView);
+                return ServerSection;
+            }(Section);
         })).call(this);
     });
     register({
-        "views\\toolbox": [ "../templates/toolbox/table" ]
+        "views\\server\\toolbox": [ "../templates/toolbox/table" ]
     }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
         var jade = require("../../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
@@ -1275,10 +1273,10 @@
         };
     });
     register({
-        views: [ "./toolbox/table_section_view" ]
-    }, "views\\toolbox", function(global, module, exports, require, window) {
+        "views\\server\\toolbox": [ "./table_section" ]
+    }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var SectionView, TableSectionView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Section, TableSection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1290,22 +1288,22 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            SectionView = require("./section_view");
-            module.exports = TableSectionView = function(_super) {
-                __extends(TableSectionView, _super);
-                function TableSectionView() {
-                    TableSectionView.__super__.constructor.apply(this, arguments);
+            Section = require("./section");
+            module.exports = TableSection = function(_super) {
+                __extends(TableSection, _super);
+                function TableSection() {
+                    TableSection.__super__.constructor.apply(this, arguments);
                 }
-                TableSectionView.prototype.template = require("../templates/toolbox/table");
-                return TableSectionView;
-            }(SectionView);
+                TableSection.prototype.template = require("../templates/toolbox/table");
+                return TableSection;
+            }(Section);
         })).call(this);
     });
     register({
-        views: [ "./toolbox_view" ]
-    }, "views", function(global, module, exports, require, window) {
+        "views\\server": [ "./toolbox" ]
+    }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var DatabaseSectionView, FieldSectionView, ServerSectionView, TableSectionView, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Sections, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1317,56 +1315,222 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            DatabaseSectionView = require("./toolbox/database_section_view");
-            FieldSectionView = require("./toolbox/field_section_view");
-            ServerSectionView = require("./toolbox/server_section_view");
-            TableSectionView = require("./toolbox/table_section_view");
+            Sections = {};
+            Sections.database = require("./database_section");
+            Sections.field = require("./field_section");
+            Sections.server = require("./server_section");
+            Sections.table = require("./table_section");
             module.exports = ToolboxView = function(_super) {
                 __extends(ToolboxView, _super);
-                function ToolboxView(graph) {
+                function ToolboxView(el, graph) {
+                    this.el = el;
                     this.graph = graph;
-                    this.el = this.graph.$("#toolbox");
                     ToolboxView.__super__.constructor.call(this);
                 }
                 ToolboxView.prototype.update = function(node) {
-                    var database, field, model, server, table;
-                    model = node.model;
-                    server = database = table = field = null;
-                    switch (model.constructor.name) {
+                    var k, nodes;
+                    nodes = {};
+                    switch (node.model.constructor.name) {
                       case "Server":
-                        server = node;
+                        nodes.server = node;
                         break;
                       case "Database":
-                        database = node;
+                        nodes.database = node;
                         break;
                       case "Table":
-                        table = node;
+                        nodes.table = node;
                         break;
                       case "Field":
-                        field = node;
+                        nodes.field = node;
                     }
-                    if (field) table = field.parent;
-                    this.server = this.database = this.table = this.field = null;
-                    if (server) this.server = new ServerSectionView(this, server);
-                    if (database) this.database = new DatabaseSectionView(this, database);
-                    if (table) this.table = new TableSectionView(this, table);
-                    if (field) this.field = new FieldSectionView(this, field);
+                    if (nodes.field) nodes.table = nodes.field.parent;
+                    this.sections = {};
+                    for (k in nodes) {
+                        node = nodes[k];
+                        this.sections[k] = new Sections[k](this, node);
+                    }
                     return this.render();
                 };
                 ToolboxView.prototype.render = function() {
-                    var _ref, _ref2, _ref3, _ref4;
+                    var k, _i, _len, _ref, _results;
                     this.el.html("");
-                    this.el.append((_ref = this.server) != null ? _ref.render() : void 0);
-                    this.el.append((_ref2 = this.database) != null ? _ref2.render() : void 0);
-                    this.el.append((_ref3 = this.table) != null ? _ref3.render() : void 0);
-                    return this.el.append((_ref4 = this.field) != null ? _ref4.render() : void 0);
+                    _ref = [ "server", "database", "table", "field" ];
+                    _results = [];
+                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                        k = _ref[_i];
+                        if (this.sections[k]) {
+                            _results.push(this.el.append(this.sections[k].render()));
+                        } else {
+                            _results.push(void 0);
+                        }
+                    }
+                    return _results;
                 };
                 return ToolboxView;
             }(Backbone.View);
         })).call(this);
     });
     register({
-        views: [ "./templates/server" ]
+        "views\\server": [ "./graph" ]
+    }, "views\\server", function(global, module, exports, require, window) {
+        ((function() {
+            var GraphView, Server, ToolboxView, __bind = function(fn, me) {
+                return function() {
+                    return fn.apply(me, arguments);
+                };
+            }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+                for (var key in parent) {
+                    if (__hasProp.call(parent, key)) child[key] = parent[key];
+                }
+                function ctor() {
+                    this.constructor = child;
+                }
+                ctor.prototype = parent.prototype;
+                child.prototype = new ctor;
+                child.__super__ = parent.prototype;
+                return child;
+            };
+            Server = require("../models/server");
+            ToolboxView = require("./toolbox");
+            module.exports = GraphView = function(_super) {
+                __extends(GraphView, _super);
+                function GraphView(el) {
+                    this.el = el;
+                    this.node_click = __bind(this.node_click, this);
+                    GraphView.__super__.constructor.call(this);
+                }
+                GraphView.prototype.initialize = function() {
+                    var _this = this;
+                    this.$ruler = $("<div/>").attr({
+                        id: "ruler"
+                    }).appendTo(this.el);
+                    this.tree = new Tree(this.el);
+                    this.tree.bind("node:add", this.node_add.bind(this));
+                    this.tree.bind("node:click", this.node_click.bind(this));
+                    this.tree.bind("node:remove", this.node_remove.bind(this));
+                    return socket.request("get_server", function(err, server) {
+                        if (err) throw err;
+                        _this.tree.set_root(server.name);
+                        _this.tree.root.model = new Server(server);
+                        _this.tree.set_centre(_this.tree.root);
+                        _this.tree.refresh();
+                        return _this.node_click(_this.tree.root);
+                    });
+                };
+                GraphView.prototype.node_add = function(node, context) {
+                    if (node.model == null) {
+                        node.model = context != null ? context.model.children().find({
+                            name: node.$label.text()
+                        }) : void 0;
+                    }
+                    return this.set_label_text(node.$label);
+                };
+                GraphView.prototype.node_remove = function(node) {
+                    return delete node.model;
+                };
+                GraphView.prototype.node_click = function(node) {
+                    var direction, path, _i, _len, _ref, _ref2;
+                    if (node.$elem.hasClass("selected")) return;
+                    direction = ((_ref = node.parent) != null ? _ref.$elem.hasClass("selected") : void 0) ? "down" : "up";
+                    this.tree.$wrapper.find(".in-path, .selected").removeClass("in-path selected");
+                    node.$elem.addClass("selected");
+                    _ref2 = [ node ].concat(node.parents());
+                    for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+                        path = _ref2[_i];
+                        path.$elem.addClass("in-path");
+                    }
+                    this.tree.unbind("node:click", this.node_click);
+                    return this["move_" + direction](node);
+                };
+                GraphView.prototype.move_down = function(node) {
+                    var sibling, _i, _len, _ref, _this = this;
+                    _ref = node.siblings();
+                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                        sibling = _ref[_i];
+                        this.tree.remove_node(sibling);
+                    }
+                    this.tree.set_centre(node);
+                    this.tree.animate();
+                    return this.tree.bind_once("anim:after", function() {
+                        if (!(node.model.id && node.model.children())) {
+                            return _this.finish_move(node);
+                        }
+                        _this.$("#overlay").show().fadeTo(250, .5);
+                        return node.model.fetch_children(function(err, children) {
+                            _this.$("#overlay").fadeTo(250, 0, function() {
+                                return $(this).hide();
+                            });
+                            if (err) return console.log(String(err));
+                            children.each(function(child) {
+                                return _this.tree.insert_node(child.get("name"), node);
+                            });
+                            _this.tree.animate();
+                            return _this.tree.bind_once("anim:after", function() {
+                                return _this.finish_move(node);
+                            });
+                        });
+                    });
+                };
+                GraphView.prototype.move_up = function(node) {
+                    var child, only_child, _i, _len, _ref, _this = this;
+                    only_child = node.children[0];
+                    if (only_child) {
+                        _ref = only_child.children.slice(0);
+                        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                            child = _ref[_i];
+                            this.tree.remove_node(child);
+                        }
+                    }
+                    this.tree.set_centre(node);
+                    this.tree.animate();
+                    return this.tree.bind_once("anim:after", function() {
+                        _this.$("#overlay").show().fadeTo(250, .5);
+                        return node.model.fetch_children(function(err, children) {
+                            _this.$("#overlay").fadeTo(250, 0, function() {
+                                return $(this).hide();
+                            });
+                            if (err) return console.log(String(err));
+                            children.each(function(child) {
+                                if (child.get("name") === (only_child != null ? only_child.model.get("name") : void 0)) {
+                                    return;
+                                }
+                                return _this.tree.insert_node(child.get("name"), node);
+                            });
+                            node.children.sort(function(a, b) {
+                                if (a.model.get("name") < b.model.get("name")) return -1;
+                                if (a.model.get("name") > b.model.get("name")) return +1;
+                                return 0;
+                            });
+                            _this.tree.animate();
+                            return _this.tree.bind_once("anim:after", function() {
+                                return _this.finish_move(node);
+                            });
+                        });
+                    });
+                };
+                GraphView.prototype.finish_move = function(node) {
+                    this.tree.bind("node:click", this.node_click);
+                    return this.toolbox.update(node);
+                };
+                GraphView.prototype.set_label_text = function($label) {
+                    var label, ratio;
+                    label = $label.text();
+                    this.$ruler.text(label);
+                    if ((ratio = 140 / this.$ruler.width()) < 1) {
+                        $label.attr({
+                            title: label
+                        });
+                        return $label.text(label.slice(0, Math.floor(ratio * label.length) - 3) + "...");
+                    } else {
+                        return $label.text(label);
+                    }
+                };
+                return GraphView;
+            }(Backbone.View);
+        })).call(this);
+    });
+    register({
+        "views\\server": [ "../templates/server" ]
     }, "views\\templates", function(global, module, exports, require, window) {
         var jade = require("../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
@@ -1472,15 +1636,11 @@
         };
     });
     register({
-        views: [ "./graph_view" ],
-        "": [ "./views/graph_view" ]
-    }, "views", function(global, module, exports, require, window) {
+        "views\\login": [ "../server" ],
+        "": [ "./views/server" ]
+    }, "views\\server", function(global, module, exports, require, window) {
         ((function() {
-            var BaseView, GraphView, Server, ToolboxView, __bind = function(fn, me) {
-                return function() {
-                    return fn.apply(me, arguments);
-                };
-            }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var BaseView, Graph, ServerView, Toolbox, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1492,163 +1652,25 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            BaseView = require("./base_view");
-            Server = require("../models/server");
-            ToolboxView = require("./toolbox_view");
-            module.exports = GraphView = function(_super) {
-                __extends(GraphView, _super);
-                GraphView.prototype.template = require("./templates/server");
-                function GraphView(on_loaded) {
-                    this.on_loaded = on_loaded;
-                    this.node_click = __bind(this.node_click, this);
-                    GraphView.__super__.constructor.apply(this, arguments);
+            BaseView = require("../base");
+            Graph = require("./graph");
+            Toolbox = require("./toolbox");
+            module.exports = ServerView = function(_super) {
+                __extends(ServerView, _super);
+                function ServerView() {
+                    ServerView.__super__.constructor.apply(this, arguments);
                 }
-                GraphView.prototype.initialize = function() {
-                    var _this = this;
-                    return global.server.fetch_children(function(err) {
-                        if (err) return console.log(String(err));
-                        return _this.on_loaded();
-                    });
+                ServerView.prototype.template = require("../templates/server");
+                ServerView.prototype.initialize = function() {
+                    this.graph = new Graph(this.$("#graph"));
+                    return this.graph.toolbox = this.toolbox = new Toolbox(this.$("#toolbox"), this.graph);
                 };
-                GraphView.prototype.render = function() {
-                    $("body").html("").append(this.el);
-                    this.$ruler = this.$("#ruler");
-                    this.toolbox = new ToolboxView(this);
-                    return this.render_graph();
-                };
-                GraphView.prototype.render_graph = function() {
-                    var _this = this;
-                    this.tree = new Tree($("#graph"));
-                    $(global).resize(function() {
-                        return _this.tree.refresh();
-                    });
-                    this.tree.bind("node:add", function(node, context) {
-                        var _ref;
-                        if (node.model == null) {
-                            node.model = (_ref = context != null ? context.model.children().find({
-                                name: node.$label.text()
-                            }) : void 0) != null ? _ref : global.server;
-                        }
-                        _this.set_label_text(node.$label);
-                        if (!node.model.id) return node.$elem.addClass("unsaved");
-                    });
-                    this.tree.bind("node:remove", function(node) {
-                        return delete node.model;
-                    });
-                    this.tree.bind("node:click", this.node_click);
-                    this.tree.set_root(global.server.get("name"));
-                    this.tree.root.$elem.addClass("in-path selected");
-                    this.tree.set_centre(this.tree.root);
-                    global.server.children().each(function(database) {
-                        return _this.tree.insert_node(database.get("name"), _this.tree.root);
-                    });
-                    this.tree.refresh();
-                    global.tree = this.tree;
-                    return this.toolbox.update(this.tree.root);
-                };
-                GraphView.prototype.node_click = function(node) {
-                    var direction, path, _i, _len, _ref, _ref2;
-                    if (node.$elem.hasClass("selected")) return;
-                    direction = ((_ref = node.parent) != null ? _ref.$elem.hasClass("selected") : void 0) ? "down" : "up";
-                    this.tree.$wrapper.find(".in-path, .selected").removeClass("in-path selected");
-                    node.$elem.addClass("selected");
-                    _ref2 = [ node ].concat(node.parents());
-                    for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-                        path = _ref2[_i];
-                        path.$elem.addClass("in-path");
-                    }
-                    this.tree.unbind("node:click", this.node_click);
-                    return this["move_" + direction](node);
-                };
-                GraphView.prototype.move_down = function(node) {
-                    var sibling, _i, _len, _ref, _this = this;
-                    _ref = node.siblings();
-                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                        sibling = _ref[_i];
-                        this.tree.remove_node(sibling);
-                    }
-                    this.tree.set_centre(node);
-                    this.tree.animate();
-                    return this.tree.bind_once("anim:after", function() {
-                        if (!(node.model.id && node.model.children())) {
-                            return _this.finish_move(node);
-                        }
-                        _this.$("#overlay").show().fadeTo(250, .5);
-                        return node.model.fetch_children(function(err, children) {
-                            _this.$("#overlay").fadeTo(250, 0, function() {
-                                return $(this).hide();
-                            });
-                            if (err) return console.log(String(err));
-                            children.each(function(child) {
-                                return _this.tree.insert_node(child.get("name"), node);
-                            });
-                            _this.tree.animate();
-                            return _this.tree.bind_once("anim:after", function() {
-                                return _this.finish_move(node);
-                            });
-                        });
-                    });
-                };
-                GraphView.prototype.move_up = function(node) {
-                    var child, only_child, _i, _len, _ref, _this = this;
-                    only_child = node.children[0];
-                    if (only_child) {
-                        _ref = only_child.children.slice(0);
-                        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                            child = _ref[_i];
-                            this.tree.remove_node(child);
-                        }
-                    }
-                    this.tree.set_centre(node);
-                    this.tree.animate();
-                    return this.tree.bind_once("anim:after", function() {
-                        _this.$("#overlay").show().fadeTo(250, .5);
-                        return node.model.fetch_children(function(err, children) {
-                            _this.$("#overlay").fadeTo(250, 0, function() {
-                                return $(this).hide();
-                            });
-                            if (err) return console.log(String(err));
-                            children.each(function(child) {
-                                if (child.get("name") === (only_child != null ? only_child.model.get("name") : void 0)) {
-                                    return;
-                                }
-                                return _this.tree.insert_node(child.get("name"), node);
-                            });
-                            node.children.sort(function(a, b) {
-                                if (a.model.get("name") < b.model.get("name")) return -1;
-                                if (a.model.get("name") > b.model.get("name")) return +1;
-                                return 0;
-                            });
-                            _this.tree.animate();
-                            return _this.tree.bind_once("anim:after", function() {
-                                return _this.finish_move(node);
-                            });
-                        });
-                    });
-                };
-                GraphView.prototype.finish_move = function(node) {
-                    this.tree.bind("node:click", this.node_click);
-                    return this.toolbox.update(node);
-                };
-                GraphView.prototype.set_label_text = function($label) {
-                    var label, ratio;
-                    label = $label.text();
-                    this.$ruler.text(label);
-                    if ((ratio = 140 / this.$ruler.width()) < 1) {
-                        $label.attr({
-                            title: label
-                        });
-                        return $label.text(label.slice(0, Math.floor(ratio * label.length) - 3) + "...");
-                    } else {
-                        return $label.text(label);
-                    }
-                };
-                return GraphView;
+                return ServerView;
             }(BaseView);
         })).call(this);
     });
     register({
-        views: [ "./templates/login" ]
+        "views\\login": [ "../templates/login" ]
     }, "views\\templates", function(global, module, exports, require, window) {
         var jade = require("../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
@@ -1775,10 +1797,10 @@
         };
     });
     register({
-        "": [ "./views/login_view" ]
-    }, "views", function(global, module, exports, require, window) {
+        "": [ "./views/login" ]
+    }, "views\\login", function(global, module, exports, require, window) {
         ((function() {
-            var BaseView, GraphView, LoginView, Server, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var BaseView, LoginView, ServerView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1790,53 +1812,50 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            BaseView = require("./base_view");
-            GraphView = require("./graph_view");
-            Server = require("../models/server");
+            BaseView = require("../base");
+            ServerView = require("../server");
             module.exports = LoginView = function(_super) {
                 __extends(LoginView, _super);
                 function LoginView() {
                     LoginView.__super__.constructor.apply(this, arguments);
                 }
-                LoginView.prototype.template = require("./templates/login");
+                LoginView.prototype.template = require("../templates/login");
                 LoginView.prototype.events = {
                     "keypress input": "login"
                 };
-                LoginView.prototype.render = function() {
-                    return $(document.body).html("").append(this.el);
+                LoginView.prototype.initialize = function() {
+                    this.$ring = this.$("#ring");
+                    return this.$message = this.$("#message");
                 };
                 LoginView.prototype.login = function(event) {
-                    var data, _this = this;
-                    if (event.charCode !== 13) return;
-                    this.$("#message").text("");
-                    this.$("input").blur().attr("disabled", "disabled");
-                    this.$("#ring").css("-webkit-animation-play-state", "running");
-                    data = {
+                    var credentials, _this = this;
+                    if (event.which !== 13) return;
+                    this.$message.text("");
+                    this.$ring.css({
+                        "-webkit-animation-play-state": "running"
+                    });
+                    this.$("input").blur().attr({
+                        disabled: "disabled"
+                    });
+                    credentials = {
                         host: this.$('input[name="host"]').val(),
                         user: this.$('input[name="user"]').val(),
                         password: this.$('input[name="password"]').val()
                     };
-                    return global.socket.request("login", data, function(err) {
-                        var new_view, old_overflow;
+                    return socket.request("login", credentials, function(err) {
                         if (err) {
-                            _this.$("#ring").css("-webkit-animation-play-state", "paused");
+                            _this.$ring.animationPlayState("paused");
+                            _this.$message.text(String(err)).css({
+                                top: -_this.$("#message").outerHeight()
+                            });
                             _this.$("input").removeAttr("disabled");
-                            _this.$("#message").text(String(err)).css("top", -_this.$("#message").outerHeight());
                             return;
                         }
-                        global.server = new Server({
-                            name: data.host
-                        });
-                        old_overflow = $("body").css("overflow");
-                        new_view = new GraphView(function() {
-                            $("body").css("overflow", "hidden");
-                            _this.$("#ring").css("-webkit-animation-play-state", "paused");
-                            return _this.el.addClass("leaving");
-                        });
-                        return _this.el.bind("webkitAnimationEnd", function() {
-                            $("body").css("overflow", old_overflow);
-                            global.router.navigate("");
-                            return new_view.fade_in();
+                        _this.$ring.animationPlayState("paused");
+                        _this.el.addClass("leaving");
+                        return _this.el.animationEnd(function() {
+                            _this.router.navigate("");
+                            return (new ServerView(_this.router)).fade_in();
                         });
                     });
                 };
@@ -1845,10 +1864,29 @@
         })).call(this);
     });
     register({
+        "": [ "../lib/support" ]
+    }, "lib", function(global, module, exports, require, window) {
+        ((function() {
+            jQuery.fn.animationPlayState = function(state) {
+                return this.css({
+                    "animation-play-state": state,
+                    "-moz-animation-play-state": state,
+                    "-ms-animation-play-state": state,
+                    "-webkit-animation-play-state": state
+                });
+            };
+            jQuery.fn.animationEnd = function(handler) {
+                if (!handler) throw new Error("animationEnd triggering not implemented");
+                this.bind("animationend", handler);
+                return this.bind("webkitAnimationEnd", handler);
+            };
+        })).call(this);
+    });
+    register({
         "": [ "app" ]
     }, "", function(global, module, exports, require, window) {
         ((function() {
-            var GraphView, LoginView, Router, Server, check_login, socket_request, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var LoginView, Router, ServerView, socket_request, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1859,44 +1897,26 @@
                 child.prototype = new ctor;
                 child.__super__ = parent.prototype;
                 return child;
-            }, _this = this;
-            LoginView = require("./views/login_view");
-            GraphView = require("./views/graph_view");
-            Server = require("./models/server");
+            };
+            LoginView = require("./views/login");
+            ServerView = require("./views/server");
+            require("../lib/support");
             socket_request = function(request, request_data, callback) {
-                var data, _ref;
-                if (!callback) {
-                    _ref = [ null, request_data ], request_data = _ref[0], callback = _ref[1];
-                }
+                var data;
+                if (callback == null) callback = request_data;
+                if (request_data === callback) request_data = null;
                 data = {
                     id: _.uniqueId("request_"),
                     request: request,
                     request_data: request_data
                 };
                 this.once("response_" + data.id, function(_arg) {
-                    var err, error, k, result, v;
+                    var err, result;
                     err = _arg.err, result = _arg.result;
-                    if (err) {
-                        error = new Error;
-                        for (k in err) {
-                            v = err[k];
-                            error[k] = v;
-                        }
-                        return callback(error);
-                    }
+                    if (err) return callback($.extend(new Error, err));
                     return callback(null, result);
                 });
                 return this.emit("request", data);
-            };
-            check_login = function(callback) {
-                return global.socket.request("check_login", function(err, response) {
-                    if (err) return console.log(String(err));
-                    if (!response) return global.router.navigate("/login", true);
-                    global.server = new Server({
-                        name: response.host
-                    });
-                    return callback();
-                });
             };
             Router = function(_super) {
                 __extends(Router, _super);
@@ -1908,25 +1928,24 @@
                     "/login": "login"
                 };
                 Router.prototype.home = function() {
-                    return check_login(function() {
-                        var view;
-                        return view = new GraphView(function() {
-                            return view.fade_in();
-                        });
+                    var _this = this;
+                    return socket.request("check_login", function(err, response) {
+                        if (err) return console.log(err.stack);
+                        if (!response) return _this.navigate("/login", true);
+                        return (new ServerView(_this)).fade_in();
                     });
                 };
                 Router.prototype.login = function() {
-                    var view;
-                    view = new LoginView;
-                    return view.fade_in();
+                    return (new LoginView(this)).fade_in();
                 };
                 return Router;
             }(Backbone.Router);
             jQuery(function() {
+                var router;
                 global.socket = io.connect();
-                global.router = new Router;
-                global.socket.request = socket_request.bind(global.socket);
-                if (global.location.hash.length < 2) global.location.hash = "#/";
+                socket.request = socket_request.bind(global.socket);
+                router = new Router;
+                if (location.hash.length < 2) location.hash = "#/";
                 return Backbone.history.start();
             });
         })).call(this);

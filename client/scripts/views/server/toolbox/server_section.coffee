@@ -1,7 +1,7 @@
-Database    = require '../../models/database'
-SectionView = require './section_view'
+Database = require '../../../models/database'
+Section  = require './section'
 
-module.exports = class ServerSectionView extends SectionView
+module.exports = class ServerSection extends Section
   
   ###
   The template for this section.
@@ -19,7 +19,7 @@ module.exports = class ServerSectionView extends SectionView
   ###
   add_database: ->
     $('#overlay').show().fadeTo 250, 0.5
-    global.socket.request 'add_database', (err, name) =>
+    socket.request 'add_database', (err, name) =>
       $('#overlay').fadeTo 250, 0, -> $(@).hide()
       return console.log String err if err
       
@@ -29,6 +29,7 @@ module.exports = class ServerSectionView extends SectionView
       node.model  = database
       @node.model.children().add database
       
+      tree = @toolbox.graph.tree
       tree.insert_node node, @node
       @node.children.sort (a, b) ->
         return -1 if a.model.get('name') < b.model.get('name')
