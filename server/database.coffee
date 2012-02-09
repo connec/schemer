@@ -104,6 +104,25 @@ module.exports = class Database
               name: new_name
   
   ###
+  Convenience method to create a table.
+  ###
+  create_table: (database, name, fields, callback) ->
+    @use database, (err) -> callback err if err
+    query = "create table `#{name}` (" + (fields.map (field) ->
+      """
+      `#{field.name}` #{field.type} #{field.length ? ''}
+      #{if field.null then 'NULL' else 'NOT NULL'}
+      #{if field.ai then 'AUTO_INCREMENT' else ''}
+      #{if field.key is 'primary' then 'PRIMARY KEY' else ''}
+      """
+    ).join(', ') + ')' 
+    @query query, (err) =>
+      return callback err if err
+      return callback null,
+        id:   "#{@client.host}/#{database}/#{name}"
+        name: name
+  
+  ###
   Convenience method to rename a table.
   ###
   rename_table: (old_db, old_name, new_db, new_name, callback) ->

@@ -247,7 +247,8 @@
         })).call(this);
     });
     register({
-        collections: [ "../models/table" ]
+        collections: [ "../models/table" ],
+        "views\\server\\toolbox": [ "../../../models/table" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
             var Fields, GraphModel, Table, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
@@ -630,7 +631,7 @@
         "views\\server\\toolbox": [ "./database_section" ]
     }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var DatabaseSection, Section, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var DatabaseSection, Section, Table, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -643,6 +644,7 @@
                 return child;
             };
             Section = require("./section");
+            Table = require("../../../models/table");
             module.exports = DatabaseSection = function(_super) {
                 __extends(DatabaseSection, _super);
                 function DatabaseSection() {
@@ -650,8 +652,39 @@
                 }
                 DatabaseSection.prototype.template = require("../templates/toolbox/database");
                 DatabaseSection.prototype.events = {
+                    "click .add": "add_table",
                     "click .drop": "drop_database",
                     "click .rename": "rename_database"
+                };
+                DatabaseSection.prototype.add_table = function() {
+                    var _this = this;
+                    $("#overlay").show().fadeTo(250, .5);
+                    return socket.request("add_table", {
+                        database: this.node.model.get("name")
+                    }, function(err, table) {
+                        var node, tree;
+                        $("#overlay").fadeTo(250, 0, function() {
+                            return $(this).hide();
+                        });
+                        if (err) return console.log(String(err));
+                        table = new Table($.extend({}, table, {
+                            parent: _this.node.model
+                        }));
+                        node = new Tree.Node(table.get("name"));
+                        node.model = table;
+                        _this.node.model.children().add(table);
+                        tree = _this.toolbox.graph.tree;
+                        tree.insert_node(node, _this.node);
+                        _this.node.children.sort(function(a, b) {
+                            if (a.model.get("name") < b.model.get("name")) return +1;
+                            if (a.model.get("name") > b.model.get("name")) return -1;
+                            return 0;
+                        });
+                        tree.animate();
+                        return tree.bind_once("anim:after", function() {
+                            return _this.toolbox.graph.node_click(node);
+                        });
+                    });
                 };
                 DatabaseSection.prototype.drop_database = function() {
                     var _this = this;
@@ -1091,17 +1124,15 @@
                 ServerSection.prototype.add_database = function() {
                     var _this = this;
                     $("#overlay").show().fadeTo(250, .5);
-                    return socket.request("add_database", function(err, name) {
-                        var database, node, tree;
+                    return socket.request("add_database", function(err, database) {
+                        var node, tree;
                         $("#overlay").fadeTo(250, 0, function() {
                             return $(this).hide();
                         });
                         if (err) return console.log(String(err));
-                        database = new Database({
-                            parent: _this.node.model,
-                            name: name
-                        });
-                        database.id = true;
+                        database = new Database($.extend({}, database, {
+                            parent: _this.node.model
+                        }));
                         node = new Tree.Node(database.get("name"));
                         node.model = database;
                         _this.node.model.children().add(database);

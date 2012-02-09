@@ -19,14 +19,13 @@ module.exports = class ServerSection extends Section
   ###
   add_database: ->
     $('#overlay').show().fadeTo 250, 0.5
-    socket.request 'add_database', (err, name) =>
+    socket.request 'add_database', (err, database) =>
       $('#overlay').fadeTo 250, 0, -> $(@).hide()
       return console.log String err if err
       
-      database    = new Database parent: @node.model, name: name
-      database.id = true
-      node        = new Tree.Node database.get 'name'
-      node.model  = database
+      database   = new Database $.extend {}, database, parent: @node.model
+      node       = new Tree.Node database.get 'name'
+      node.model = database
       @node.model.children().add database
       
       tree = @toolbox.graph.tree

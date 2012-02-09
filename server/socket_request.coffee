@@ -96,16 +96,14 @@ module.exports = class SocketRequest
   Creates a new database on the server named 'new database (n)'.
   ###
   add_database: ->
-    i = 0
     @database.get_databases (err, databases) =>
       return @respond err if err
       
+      i = 0
       for {name} in databases
-        i = match[1] if match = name.match /new database \((\d+)\)/i
+        i = match[1] if match = name.match(/new database \((\d+)\)/i) and parseInt(match[1]) > i
       name = "new database (#{++i})"
-      @database.create_database name, (err) =>
-        return @respond err if err
-        return @respond null, name
+      @database.create_database name, @respond.bind @
   
   ###
   Renames the database named `old_name` to given `new_name`.  Any tables in
@@ -119,3 +117,23 @@ module.exports = class SocketRequest
   ###
   drop_database: ({database}) ->
     @database.drop_database database, @respond.bind @
+  
+  ###
+  Creates a new table in `database` named 'new table (n)', with an id field.
+  ###
+  add_table: ({database}) ->
+    # Representation of the ID field
+    id =
+      name: 'id'
+      type: 'int'
+      null: no
+      ai:   yes
+      key:  'primary'
+    @database.get_tables database, (err, tables) =>
+      return @respond err if err
+      
+      i = 0
+      for {name} in tables
+        i = match[1] if match = name.match(/new table\((\d+)\)/i) and parseInt(match[1]) > i
+      name = "new table (#{++i})"
+      @database.create_table database, name, [id], @respond.bind @
