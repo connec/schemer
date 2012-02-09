@@ -1,4 +1,4 @@
-Server      = require '../models/server'
+Server      = require '../../models/server'
 ToolboxView = require './toolbox'
 
 module.exports = class GraphView extends Backbone.View
@@ -16,7 +16,7 @@ module.exports = class GraphView extends Backbone.View
     @$ruler = $('<div/>').attr(id: 'ruler').appendTo @el
     
     # Construct the Tree representing the visualisation
-    @tree = new Tree @el
+    @tree = global.tree = new Tree @el
     @tree.bind 'node:add', @node_add.bind @
     @tree.bind 'node:click', @node_click.bind @
     @tree.bind 'node:remove', @node_remove.bind @
@@ -59,7 +59,10 @@ module.exports = class GraphView extends Backbone.View
     return if node.$elem.hasClass 'selected'
     
     # We're moving down if this node's parent is selected
-    direction = if node.parent?.$elem.hasClass('selected') then 'down' else 'up'
+    if parseInt(node.$elem.attr 'data-depth') < parseInt(@$('.selected').attr 'data-depth')
+      direction = 'up'
+    else
+      direction = 'down'
     
     # Apply styles to the new selected node and its parents
     @tree.$wrapper.find('.in-path, .selected').removeClass 'in-path selected'
@@ -77,7 +80,8 @@ module.exports = class GraphView extends Backbone.View
   ###
   move_down: (node) ->
     # First, remove all siblings and centre the view on the node.
-    @tree.remove_node sibling for sibling in node.siblings()
+    unless node.model.constructor.name is 'Field'
+      @tree.remove_node sibling for sibling in node.siblings()
     @tree.set_centre node
     @tree.animate()
     

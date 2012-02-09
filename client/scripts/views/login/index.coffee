@@ -3,7 +3,7 @@ ServerView = require '../server'
 
 module.exports = class LoginView extends BaseView
   # Load the home template
-  template: require '../templates/login'
+  template: require '../../templates/login'
   
   # Bind events
   events:

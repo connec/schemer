@@ -10,7 +10,7 @@ module.exports = class ServerView extends BaseView
   ###
   The template for the view.
   ###
-  template: require '../templates/server'
+  template: require '../../templates/server'
   
   ###
   Initialises the view.

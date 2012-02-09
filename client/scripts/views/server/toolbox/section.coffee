@@ -12,3 +12,29 @@ module.exports = class Section extends Backbone.View
   ###
   render: ->
     return @el
+  
+  ###
+  Handles the creation of a child for this node.
+  ###
+  add_child: (request_args) ->
+    Child = @node.model.constructor::Children::model
+    
+    $('#overlay').show().fadeTo 250, 0.5
+    socket.request "add_#{Child.name.toLowerCase()}", request_args, (err, attributes) =>
+      $('#overlay').fadeTo 250, 0, -> $(@).hide()
+      return console.log String err if err
+      
+      child      = new Child $.extend {}, attributes, parent: @node.model
+      node       = new Tree.Node child.get 'name'
+      node.model = child
+      @node.model.children().add child
+      
+      tree = @toolbox.graph.tree
+      tree.insert_node node, @node
+      @node.children.sort (a, b) ->
+        return -1 if a.model.get('name') < b.model.get('name')
+        return +1 if a.model.get('name') > b.model.get('name')
+        return 0
+      tree.animate()
+      tree.bind_once 'anim:after', =>
+        @toolbox.graph.node_click node

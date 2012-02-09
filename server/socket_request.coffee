@@ -137,3 +137,15 @@ module.exports = class SocketRequest
         i = match[1] if match = name.match(/new table\((\d+)\)/i) and parseInt(match[1]) > i
       name = "new table (#{++i})"
       @database.create_table database, name, [id], @respond.bind @
+  
+  ###
+  Renames the table named `old_name` to given `new_name`.
+  ###
+  rename_table: ({database, old_name, new_name}) ->
+    @database.rename_table database, old_name, database, new_name, @respond.bind @
+  
+  ###
+  Drops the given table.
+  ###
+  drop_table: ({database, table}) ->
+    @database.drop_table database, table, @respond.bind @

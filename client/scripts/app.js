@@ -361,7 +361,7 @@
         })).call(this);
     });
     register({
-        "views\\server": [ "../models/server" ]
+        "views\\server": [ "../../models/server" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
             var Databases, GraphModel, Server, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
@@ -417,13 +417,42 @@
                 Section.prototype.render = function() {
                     return this.el;
                 };
+                Section.prototype.add_child = function(request_args) {
+                    var Child, _this = this;
+                    Child = this.node.model.constructor.prototype.Children.prototype.model;
+                    $("#overlay").show().fadeTo(250, .5);
+                    return socket.request("add_" + Child.name.toLowerCase(), request_args, function(err, attributes) {
+                        var child, node, tree;
+                        $("#overlay").fadeTo(250, 0, function() {
+                            return $(this).hide();
+                        });
+                        if (err) return console.log(String(err));
+                        child = new Child($.extend({}, attributes, {
+                            parent: _this.node.model
+                        }));
+                        node = new Tree.Node(child.get("name"));
+                        node.model = child;
+                        _this.node.model.children().add(child);
+                        tree = _this.toolbox.graph.tree;
+                        tree.insert_node(node, _this.node);
+                        _this.node.children.sort(function(a, b) {
+                            if (a.model.get("name") < b.model.get("name")) return -1;
+                            if (a.model.get("name") > b.model.get("name")) return +1;
+                            return 0;
+                        });
+                        tree.animate();
+                        return tree.bind_once("anim:after", function() {
+                            return _this.toolbox.graph.node_click(node);
+                        });
+                    });
+                };
                 return Section;
             }(Backbone.View);
         })).call(this);
     });
     register({
-        "views\\templates\\toolbox": [ "../../../lib/vendor/jade_runtime" ],
-        "views\\templates": [ "../../lib/vendor/jade_runtime" ]
+        "templates\\toolbox": [ "../../lib/vendor/jade_runtime" ],
+        templates: [ "../lib/vendor/jade_runtime" ]
     }, "lib\\vendor", function(global, module, exports, require, window) {
         if (!Array.isArray) {
             Array.isArray = function(arr) {
@@ -478,14 +507,14 @@
         };
     });
     register({
-        "views\\server\\toolbox": [ "../templates/toolbox/database" ]
-    }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
-        var jade = require("../../../lib/vendor/jade_runtime");
+        "views\\server\\toolbox": [ "../../../templates/toolbox/database" ]
+    }, "templates\\toolbox", function(global, module, exports, require, window) {
+        var jade = require("../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
             var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
             var __jade = [ {
                 lineno: 1,
-                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\toolbox\\database.jade"
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\templates\\toolbox\\database.jade"
             } ];
             try {
                 var buf = [];
@@ -650,40 +679,15 @@
                 function DatabaseSection() {
                     DatabaseSection.__super__.constructor.apply(this, arguments);
                 }
-                DatabaseSection.prototype.template = require("../templates/toolbox/database");
+                DatabaseSection.prototype.template = require("../../../templates/toolbox/database");
                 DatabaseSection.prototype.events = {
-                    "click .add": "add_table",
+                    "click .add": "add_child",
                     "click .drop": "drop_database",
                     "click .rename": "rename_database"
                 };
-                DatabaseSection.prototype.add_table = function() {
-                    var _this = this;
-                    $("#overlay").show().fadeTo(250, .5);
-                    return socket.request("add_table", {
+                DatabaseSection.prototype.add_child = function() {
+                    return DatabaseSection.__super__.add_child.call(this, {
                         database: this.node.model.get("name")
-                    }, function(err, table) {
-                        var node, tree;
-                        $("#overlay").fadeTo(250, 0, function() {
-                            return $(this).hide();
-                        });
-                        if (err) return console.log(String(err));
-                        table = new Table($.extend({}, table, {
-                            parent: _this.node.model
-                        }));
-                        node = new Tree.Node(table.get("name"));
-                        node.model = table;
-                        _this.node.model.children().add(table);
-                        tree = _this.toolbox.graph.tree;
-                        tree.insert_node(node, _this.node);
-                        _this.node.children.sort(function(a, b) {
-                            if (a.model.get("name") < b.model.get("name")) return +1;
-                            if (a.model.get("name") > b.model.get("name")) return -1;
-                            return 0;
-                        });
-                        tree.animate();
-                        return tree.bind_once("anim:after", function() {
-                            return _this.toolbox.graph.node_click(node);
-                        });
                     });
                 };
                 DatabaseSection.prototype.drop_database = function() {
@@ -717,16 +721,14 @@
                         return global.socket.request("rename_database", {
                             old_name: _this.node.model.get("name"),
                             new_name: new_name
-                        }, function(err) {
+                        }, function(err, database) {
                             $("#overlay").fadeTo(250, 0, function() {
                                 return $(this).hide();
                             });
                             if (err) return console.log(String(err));
-                            _this.node.$label.text(new_name);
-                            _this.node.model.set({
-                                name: new_name
-                            });
-                            return _this.$("h1").text(new_name);
+                            _this.node.model.set(database);
+                            _this.node.$label.text(database.name);
+                            return _this.$("h1").text(database.name);
                         });
                     };
                     this.node.$label.html("");
@@ -740,14 +742,14 @@
         })).call(this);
     });
     register({
-        "views\\server\\toolbox": [ "../templates/toolbox/field" ]
-    }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
-        var jade = require("../../../lib/vendor/jade_runtime");
+        "views\\server\\toolbox": [ "../../../templates/toolbox/field" ]
+    }, "templates\\toolbox", function(global, module, exports, require, window) {
+        var jade = require("../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
             var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
             var __jade = [ {
                 lineno: 1,
-                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\toolbox\\field.jade"
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\templates\\toolbox\\field.jade"
             } ];
             try {
                 var buf = [];
@@ -995,20 +997,20 @@
                 function FieldSection() {
                     FieldSection.__super__.constructor.apply(this, arguments);
                 }
-                FieldSection.prototype.template = require("../templates/toolbox/field");
+                FieldSection.prototype.template = require("../../../templates/toolbox/field");
                 return FieldSection;
             }(Section);
         })).call(this);
     });
     register({
-        "views\\server\\toolbox": [ "../templates/toolbox/server" ]
-    }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
-        var jade = require("../../../lib/vendor/jade_runtime");
+        "views\\server\\toolbox": [ "../../../templates/toolbox/server" ]
+    }, "templates\\toolbox", function(global, module, exports, require, window) {
+        var jade = require("../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
             var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
             var __jade = [ {
                 lineno: 1,
-                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\toolbox\\server.jade"
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\templates\\toolbox\\server.jade"
             } ];
             try {
                 var buf = [];
@@ -1117,51 +1119,26 @@
                 function ServerSection() {
                     ServerSection.__super__.constructor.apply(this, arguments);
                 }
-                ServerSection.prototype.template = require("../templates/toolbox/server");
+                ServerSection.prototype.template = require("../../../templates/toolbox/server");
                 ServerSection.prototype.events = {
-                    "click .add": "add_database"
+                    "click .add": "add_child"
                 };
-                ServerSection.prototype.add_database = function() {
-                    var _this = this;
-                    $("#overlay").show().fadeTo(250, .5);
-                    return socket.request("add_database", function(err, database) {
-                        var node, tree;
-                        $("#overlay").fadeTo(250, 0, function() {
-                            return $(this).hide();
-                        });
-                        if (err) return console.log(String(err));
-                        database = new Database($.extend({}, database, {
-                            parent: _this.node.model
-                        }));
-                        node = new Tree.Node(database.get("name"));
-                        node.model = database;
-                        _this.node.model.children().add(database);
-                        tree = _this.toolbox.graph.tree;
-                        tree.insert_node(node, _this.node);
-                        _this.node.children.sort(function(a, b) {
-                            if (a.model.get("name") < b.model.get("name")) return -1;
-                            if (a.model.get("name") > b.model.get("name")) return +1;
-                            return 0;
-                        });
-                        tree.animate();
-                        return tree.bind_once("anim:after", function() {
-                            return _this.toolbox.graph.node_click(node);
-                        });
-                    });
+                ServerSection.prototype.add_child = function() {
+                    return ServerSection.__super__.add_child.call(this);
                 };
                 return ServerSection;
             }(Section);
         })).call(this);
     });
     register({
-        "views\\server\\toolbox": [ "../templates/toolbox/table" ]
-    }, "views\\templates\\toolbox", function(global, module, exports, require, window) {
-        var jade = require("../../../lib/vendor/jade_runtime");
+        "views\\server\\toolbox": [ "../../../templates/toolbox/table" ]
+    }, "templates\\toolbox", function(global, module, exports, require, window) {
+        var jade = require("../../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
             var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
             var __jade = [ {
                 lineno: 1,
-                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\toolbox\\table.jade"
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\templates\\toolbox\\table.jade"
             } ];
             try {
                 var buf = [];
@@ -1325,7 +1302,60 @@
                 function TableSection() {
                     TableSection.__super__.constructor.apply(this, arguments);
                 }
-                TableSection.prototype.template = require("../templates/toolbox/table");
+                TableSection.prototype.template = require("../../../templates/toolbox/table");
+                TableSection.prototype.events = {
+                    "click .drop": "drop_table",
+                    "click .rename": "rename_table"
+                };
+                TableSection.prototype.drop_table = function() {
+                    var _this = this;
+                    $("#overlay").show().fadeTo(250, .5);
+                    return global.socket.request("drop_table", {
+                        database: this.node.model.get("parent").get("name"),
+                        table: this.node.model.get("name")
+                    }, function(err) {
+                        var parent;
+                        $("#overlay").fadeTo(250, 0, function() {
+                            return $(this).hide();
+                        });
+                        if (err) return console.log(String(err));
+                        parent = _this.node.parent;
+                        _this.toolbox.graph.tree.remove_node(_this.node);
+                        return _this.toolbox.graph.node_click(parent);
+                    });
+                };
+                TableSection.prototype.rename_table = function() {
+                    var $input, rename, _this = this;
+                    rename = function(e) {
+                        var new_name;
+                        if (e.type === "keypress" && e.which !== 13) return;
+                        new_name = $input.val().toLowerCase();
+                        if (new_name === _this.node.model.get("name")) {
+                            _this.node.$label.text(new_name);
+                            return;
+                        }
+                        $input.val(new_name);
+                        $("#overlay").show().fadeTo(250, .5);
+                        return global.socket.request("rename_table", {
+                            database: _this.node.model.get("parent").get("name"),
+                            old_name: _this.node.model.get("name"),
+                            new_name: new_name
+                        }, function(err, table) {
+                            $("#overlay").fadeTo(250, 0, function() {
+                                return $(this).hide();
+                            });
+                            if (err) return console.log(String(err));
+                            _this.node.model.set(table);
+                            _this.node.$label.text(table.name);
+                            return _this.$("h1").text(table.name);
+                        });
+                    };
+                    this.node.$label.html("");
+                    return $input = $("<input/>").attr({
+                        type: "text",
+                        value: this.node.model.get("name")
+                    }).appendTo(this.node.$label).focus().select().bind("blur", rename).bind("keypress", rename);
+                };
                 return TableSection;
             }(Section);
         })).call(this);
@@ -1421,7 +1451,7 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            Server = require("../models/server");
+            Server = require("../../models/server");
             ToolboxView = require("./toolbox");
             module.exports = GraphView = function(_super) {
                 __extends(GraphView, _super);
@@ -1435,7 +1465,7 @@
                     this.$ruler = $("<div/>").attr({
                         id: "ruler"
                     }).appendTo(this.el);
-                    this.tree = new Tree(this.el);
+                    this.tree = global.tree = new Tree(this.el);
                     this.tree.bind("node:add", this.node_add.bind(this));
                     this.tree.bind("node:click", this.node_click.bind(this));
                     this.tree.bind("node:remove", this.node_remove.bind(this));
@@ -1460,14 +1490,18 @@
                     return delete node.model;
                 };
                 GraphView.prototype.node_click = function(node) {
-                    var direction, path, _i, _len, _ref, _ref2;
+                    var direction, path, _i, _len, _ref;
                     if (node.$elem.hasClass("selected")) return;
-                    direction = ((_ref = node.parent) != null ? _ref.$elem.hasClass("selected") : void 0) ? "down" : "up";
+                    if (parseInt(node.$elem.attr("data-depth")) < parseInt(this.$(".selected").attr("data-depth"))) {
+                        direction = "up";
+                    } else {
+                        direction = "down";
+                    }
                     this.tree.$wrapper.find(".in-path, .selected").removeClass("in-path selected");
                     node.$elem.addClass("selected");
-                    _ref2 = [ node ].concat(node.parents());
-                    for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-                        path = _ref2[_i];
+                    _ref = [ node ].concat(node.parents());
+                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                        path = _ref[_i];
                         path.$elem.addClass("in-path");
                     }
                     this.tree.unbind("node:click", this.node_click);
@@ -1475,10 +1509,12 @@
                 };
                 GraphView.prototype.move_down = function(node) {
                     var sibling, _i, _len, _ref, _this = this;
-                    _ref = node.siblings();
-                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                        sibling = _ref[_i];
-                        this.tree.remove_node(sibling);
+                    if (node.model.constructor.name !== "Field") {
+                        _ref = node.siblings();
+                        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                            sibling = _ref[_i];
+                            this.tree.remove_node(sibling);
+                        }
                     }
                     this.tree.set_centre(node);
                     this.tree.animate();
@@ -1561,14 +1597,14 @@
         })).call(this);
     });
     register({
-        "views\\server": [ "../templates/server" ]
-    }, "views\\templates", function(global, module, exports, require, window) {
-        var jade = require("../../lib/vendor/jade_runtime");
+        "views\\server": [ "../../templates/server" ]
+    }, "templates", function(global, module, exports, require, window) {
+        var jade = require("../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
             var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
             var __jade = [ {
                 lineno: 1,
-                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\server.jade"
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\templates\\server.jade"
             } ];
             try {
                 var buf = [];
@@ -1691,7 +1727,7 @@
                 function ServerView() {
                     ServerView.__super__.constructor.apply(this, arguments);
                 }
-                ServerView.prototype.template = require("../templates/server");
+                ServerView.prototype.template = require("../../templates/server");
                 ServerView.prototype.initialize = function() {
                     this.graph = new Graph(this.$("#graph"));
                     return this.graph.toolbox = this.toolbox = new Toolbox(this.$("#toolbox"), this.graph);
@@ -1701,14 +1737,14 @@
         })).call(this);
     });
     register({
-        "views\\login": [ "../templates/login" ]
-    }, "views\\templates", function(global, module, exports, require, window) {
-        var jade = require("../../lib/vendor/jade_runtime");
+        "views\\login": [ "../../templates/login" ]
+    }, "templates", function(global, module, exports, require, window) {
+        var jade = require("../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
             var attrs = jade.attrs, escape = jade.escape, rethrow = jade.rethrow;
             var __jade = [ {
                 lineno: 1,
-                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\views\\templates\\login.jade"
+                filename: "C:\\Users\\Minty\\Code\\projects\\honours\\client\\scripts\\templates\\login.jade"
             } ];
             try {
                 var buf = [];
@@ -1850,7 +1886,7 @@
                 function LoginView() {
                     LoginView.__super__.constructor.apply(this, arguments);
                 }
-                LoginView.prototype.template = require("../templates/login");
+                LoginView.prototype.template = require("../../templates/login");
                 LoginView.prototype.events = {
                     "keypress input": "login"
                 };

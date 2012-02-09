@@ -36,8 +36,7 @@ module.exports = class Database
   Convenience method to get an array of the tables in a database.
   ###
   get_tables: (database, callback) ->
-    @use database, (err) -> callback err if err
-    @query 'show tables', (err, results) =>
+    @query "show tables in `#{database}`", (err, results) =>
       return callback err if err
       return callback null, results.map (result) =>
         id:   "#{@client.host}/#{database}/#{result["Tables_in_#{database}"]}"
@@ -47,8 +46,7 @@ module.exports = class Database
   Convenience method to get an array of the fields of a table.
   ###
   get_fields: (database, table, callback) ->
-    @use database, (err) -> callback err if err
-    @query "describe `#{table}`", (err, results) =>
+    @query "describe `#{database}`.`#{table}`", (err, results) =>
       return callback err if err
       
       # Fields need a bit of processing...
@@ -107,8 +105,7 @@ module.exports = class Database
   Convenience method to create a table.
   ###
   create_table: (database, name, fields, callback) ->
-    @use database, (err) -> callback err if err
-    query = "create table `#{name}` (" + (fields.map (field) ->
+    query = "create table `#{database}`.`#{name}` (" + (fields.map (field) ->
       """
       `#{field.name}` #{field.type} #{field.length ? ''}
       #{if field.null then 'NULL' else 'NOT NULL'}
@@ -131,3 +128,9 @@ module.exports = class Database
       return callback null,
         id:   "#{@client.host}/#{new_db}/#{new_name}"
         name: new_name
+  
+  ###
+  Convenience method to drop a table with given name.
+  ###
+  drop_table: (database, name, callback) ->
+    @query "drop table `#{database}`.`#{name}`", callback

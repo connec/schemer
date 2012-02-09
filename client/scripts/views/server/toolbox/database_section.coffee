@@ -6,39 +6,21 @@ module.exports = class DatabaseSection extends Section
   ###
   The template for this section.
   ###
-  template: require '../templates/toolbox/database'
+  template: require '../../../templates/toolbox/database'
   
   ###
   Bind events.
   ###
   events:
-    'click .add':    'add_table'
+    'click .add':    'add_child'
     'click .drop':   'drop_database'
     'click .rename': 'rename_database'
   
   ###
   Handles the creation of a new table.
   ###
-  add_table: ->
-    $('#overlay').show().fadeTo 250, 0.5
-    socket.request 'add_table', {database: @node.model.get 'name'}, (err, table) =>
-      $('#overlay').fadeTo 250, 0, -> $(@).hide()
-      return console.log String err if err
-      
-      table      = new Table $.extend {}, table, parent: @node.model
-      node       = new Tree.Node table.get 'name'
-      node.model = table
-      @node.model.children().add table
-      
-      tree = @toolbox.graph.tree
-      tree.insert_node node, @node
-      @node.children.sort (a, b) ->
-        return +1 if a.model.get('name') < b.model.get('name')
-        return -1 if a.model.get('name') > b.model.get('name')
-        return 0
-      tree.animate()
-      tree.bind_once 'anim:after', =>
-        @toolbox.graph.node_click node
+  add_child: ->
+    super database: @node.model.get 'name'
   
   ###
   Handles the dropping of a database.
@@ -67,12 +49,15 @@ module.exports = class DatabaseSection extends Section
       
       $input.val new_name
       $('#overlay').show().fadeTo 250, 0.5
-      global.socket.request 'rename_database', {old_name: @node.model.get('name'), new_name}, (err) =>
+      global.socket.request 'rename_database',
+        old_name: @node.model.get 'name'
+        new_name: new_name
+      , (err, database) =>
         $('#overlay').fadeTo 250, 0, -> $(@).hide()
         return console.log String err if err
-        @node.$label.text new_name
-        @node.model.set name: new_name
-        @$('h1').text new_name
+        @node.model.set database
+        @node.$label.text database.name
+        @$('h1').text database.name
     
     @node.$label.html ''
     $input = $('<input/>')
