@@ -31,10 +31,7 @@ module.exports = class Section extends Backbone.View
       
       tree = @toolbox.graph.tree
       tree.insert_node node, @node
-      @node.children.sort (a, b) ->
-        return -1 if a.model.get('name') < b.model.get('name')
-        return +1 if a.model.get('name') > b.model.get('name')
-        return 0
+      @toolbox.graph.sort_children @node
       tree.animate()
       tree.bind_once 'anim:after', =>
         @toolbox.graph.node_click node

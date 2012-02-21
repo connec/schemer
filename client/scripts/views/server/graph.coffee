@@ -1,7 +1,18 @@
 Server      = require '../../models/server'
+Table       = require '../../models/table'
 ToolboxView = require './toolbox'
 
 module.exports = class GraphView extends Backbone.View
+  ###
+  The default method for comparing nodes.
+  ###
+  default_node_cmp = (a, b) ->
+    a_name = a.model.get('name').toLowerCase()
+    b_name = b.model.get('name').toLowerCase()
+    return -1 if a_name < b_name
+    return +1 if a_name > b_name
+    return 0
+  
   ###
   Constructs the view.
   ###
@@ -101,11 +112,11 @@ module.exports = class GraphView extends Backbone.View
   Updates the graph after a transition higher up the graph.
   ###
   move_up: (node) ->
-    only_child = node.children[0]
-    
     # First, remove all grand-children
-    if only_child
-      @tree.remove_node child for child in only_child.children[0..]
+    ids = []
+    for child in node.children[0..]
+      ids.push child.model.id
+      @tree.remove_node grandchild for grandchild in child.children[0..]
     @tree.set_centre node
     @tree.animate()
     
@@ -116,12 +127,9 @@ module.exports = class GraphView extends Backbone.View
         @$('#overlay').fadeTo 250, 0, -> $(@).hide()
         return console.log String err if err
         children.each (child) =>
-          return if child.get('name') == only_child?.model.get('name')
+          return if child.id in ids
           @tree.insert_node child.get('name'), node
-        node.children.sort (a, b)->
-          return -1 if a.model.get('name') < b.model.get('name')
-          return +1 if a.model.get('name') > b.model.get('name')
-          return 0
+        @sort_children node unless node.model instanceof Table
         @tree.animate()
         @tree.bind_once 'anim:after', => @finish_move node
   
@@ -146,3 +154,9 @@ module.exports = class GraphView extends Backbone.View
       $label.text label.slice(0, Math.floor(ratio * label.length) - 3) + '...'
     else
       $label.text label
+  
+  ###
+  Sorts the children of the given node.
+  ###
+  sort_children: (node, cmp = default_node_cmp) ->
+    node.children.sort cmp

@@ -101,7 +101,8 @@ module.exports = class SocketRequest
       
       i = 0
       for {name} in databases
-        i = match[1] if match = name.match(/new database \((\d+)\)/i) and parseInt(match[1]) > i
+        if (match = name.match(/new database \((\d+)\)/i)) and parseInt(match[1]) > i
+          i = match[1]
       name = "new database (#{++i})"
       @database.create_database name, @respond.bind @
   
@@ -134,7 +135,8 @@ module.exports = class SocketRequest
       
       i = 0
       for {name} in tables
-        i = match[1] if match = name.match(/new table\((\d+)\)/i) and parseInt(match[1]) > i
+        if (match = name.match(/new table\((\d+)\)/i)) and parseInt(match[1]) > i
+          i = match[1]
       name = "new table (#{++i})"
       @database.create_table database, name, [id], @respond.bind @
   
