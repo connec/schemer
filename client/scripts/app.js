@@ -80,10 +80,10 @@
         })).call(this);
     });
     register({
-        models: [ "./graph_model" ]
+        models: [ "./node_model" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
-            var GraphModel, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Children, NodeModel, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -94,109 +94,77 @@
                 child.prototype = new ctor;
                 child.__super__ = parent.prototype;
                 return child;
-            };
-            module.exports = GraphModel = function(_super) {
-                __extends(GraphModel, _super);
-                function GraphModel() {
-                    GraphModel.__super__.constructor.apply(this, arguments);
-                    this.set({
-                        children: this.Children != null ? new this.Children(this) : null
-                    });
+            }, __indexOf = Array.prototype.indexOf || function(item) {
+                for (var i = 0, l = this.length; i < l; i++) {
+                    if (i in this && this[i] === item) return i;
                 }
-                GraphModel.prototype.parent = function() {
-                    return this.get("parent");
-                };
-                GraphModel.prototype.children = function() {
-                    return this.get("children");
-                };
-                GraphModel.prototype.fetch_children = function(callback) {
-                    var children;
-                    if (!(children = this.get("children"))) return callback();
-                    children.reset();
-                    return children.fetch({
-                        error: function(_, err) {
-                            return callback(err);
-                        },
-                        success: function(collection) {
-                            return callback(null, collection);
-                        }
+                return -1;
+            };
+            module.exports = NodeModel = function(_super) {
+                var k, v, _ref;
+                __extends(NodeModel, _super);
+                _ref = Tree.Node.prototype;
+                for (k in _ref) {
+                    v = _ref[k];
+                    NodeModel.prototype[k] = v;
+                }
+                function NodeModel(properties) {
+                    var _this = this;
+                    if (properties == null) properties = {};
+                    NodeModel.__super__.constructor.call(this, properties);
+                    Tree.Node.call(this, this.get("name"));
+                    this.bind("change:name", function() {
+                        return _this.$label.text(_this.get("name"));
                     });
-                };
-                return GraphModel;
+                    if (this.constructor.Child) {
+                        this.set({
+                            children: new Children(this)
+                        });
+                    }
+                }
+                return NodeModel;
             }(Backbone.Model);
-        })).call(this);
-    });
-    register({
-        collections: [ "./graph_collection" ]
-    }, "collections", function(global, module, exports, require, window) {
-        ((function() {
-            var GraphCollection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
-                for (var key in parent) {
-                    if (__hasProp.call(parent, key)) child[key] = parent[key];
-                }
-                function ctor() {
-                    this.constructor = child;
-                }
-                ctor.prototype = parent.prototype;
-                child.prototype = new ctor;
-                child.__super__ = parent.prototype;
-                return child;
-            };
-            module.exports = GraphCollection = function(_super) {
-                __extends(GraphCollection, _super);
-                function GraphCollection(parent) {
+            Children = function(_super) {
+                __extends(Children, _super);
+                function Children(parent) {
                     this.parent = parent;
-                    GraphCollection.__super__.constructor.call(this, null);
+                    Children.__super__.constructor.call(this);
+                    this.model = this.parent.constructor.Child;
+                    this.bind("add", this.on_add.bind(this));
+                    this.bind("reset", this.on_reset.bind(this));
                 }
-                GraphCollection.prototype.comparator = function(model) {
+                Children.prototype.comparator = function(model) {
                     return model.get("name");
                 };
-                GraphCollection.prototype.fetch = function(_arg) {
-                    var data, error, success, _this = this;
-                    error = _arg.error, success = _arg.success;
-                    data = {};
-                    switch (this.model.name) {
-                      case "Field":
-                        data.database = this.parent.get("parent").get("name");
-                        data.table = this.parent.get("name");
-                        break;
-                      case "Table":
-                        data.database = this.parent.get("name");
-                    }
-                    return global.socket.request("get_" + this.constructor.name.toLowerCase(), data, function(err, models) {
-                        var model, _i, _len;
-                        if (err) return error(null, err);
-                        for (_i = 0, _len = models.length; _i < _len; _i++) {
-                            model = models[_i];
-                            model.parent = _this.parent;
-                        }
-                        _this.add(models);
-                        return success(_this, null);
+                Children.prototype.on_add = function(model, collection, options) {
+                    var _ref;
+                    model.parent = this.parent;
+                    return this.parent.tree.insert_node(model, this.parent, (_ref = options.index) != null ? _ref : this.indexOf(model));
+                };
+                Children.prototype.on_reset = function() {
+                    var skip, _this = this;
+                    skip = this.parent.children.map(function(child) {
+                        return child.id;
+                    });
+                    return this.each(function(model, index) {
+                        var _ref;
+                        if (_ref = model.id, __indexOf.call(skip, _ref) >= 0) return;
+                        model.parent = _this.parent;
+                        return _this.parent.tree.insert_node(model, _this.parent, index);
                     });
                 };
-                GraphCollection.prototype.find = function(arg) {
-                    if (typeof arg === "function") {
-                        return GraphCollection.__super__.find.apply(this, arguments);
-                    }
-                    return GraphCollection.__super__.find.call(this, function(model) {
-                        var k, v;
-                        for (k in arg) {
-                            v = arg[k];
-                            if (model.get(k) !== v) return false;
-                        }
-                        return true;
-                    });
-                };
-                return GraphCollection;
+                return Children;
             }(Backbone.Collection);
         })).call(this);
     });
     register({
-        collections: [ "../models/field" ],
-        "views\\server\\toolbox": [ "../../../models/field" ]
+        "views\\server": [ "../../models/field" ],
+        models: [ "./field" ],
+        "views\\server\\toolbox": [ "../../../models/field" ],
+        lib: [ "../models/field" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
-            var Field, GraphModel, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Field, NodeModel, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -208,52 +176,24 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            GraphModel = require("./graph_model");
+            NodeModel = require("./node_model");
             module.exports = Field = function(_super) {
                 __extends(Field, _super);
                 function Field() {
                     Field.__super__.constructor.apply(this, arguments);
                 }
                 return Field;
-            }(GraphModel);
+            }(NodeModel);
         })).call(this);
     });
     register({
-        models: [ "../collections/fields" ]
-    }, "collections", function(global, module, exports, require, window) {
-        ((function() {
-            var Field, Fields, GraphCollection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
-                for (var key in parent) {
-                    if (__hasProp.call(parent, key)) child[key] = parent[key];
-                }
-                function ctor() {
-                    this.constructor = child;
-                }
-                ctor.prototype = parent.prototype;
-                child.prototype = new ctor;
-                child.__super__ = parent.prototype;
-                return child;
-            };
-            GraphCollection = require("./graph_collection");
-            Field = require("../models/field");
-            module.exports = Fields = function(_super) {
-                __extends(Fields, _super);
-                function Fields() {
-                    Fields.__super__.constructor.apply(this, arguments);
-                }
-                Fields.prototype.model = Field;
-                Fields.prototype.comparator = null;
-                return Fields;
-            }(GraphCollection);
-        })).call(this);
-    });
-    register({
-        collections: [ "../models/table" ],
+        models: [ "./table" ],
         "views\\server": [ "../../models/table" ],
-        "views\\server\\toolbox": [ "../../../models/table" ]
+        "views\\server\\toolbox": [ "../../../models/table" ],
+        lib: [ "../models/table" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
-            var Fields, GraphModel, Table, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Field, NodeModel, Table, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -265,52 +205,26 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            Fields = require("../collections/fields");
-            GraphModel = require("./graph_model");
+            Field = require("./field");
+            NodeModel = require("./node_model");
             module.exports = Table = function(_super) {
                 __extends(Table, _super);
+                Table.Child = Field;
                 function Table() {
                     Table.__super__.constructor.apply(this, arguments);
+                    this.get("children").comparator = null;
                 }
-                Table.prototype.Children = Fields;
                 return Table;
-            }(GraphModel);
+            }(NodeModel);
         })).call(this);
     });
     register({
-        models: [ "../collections/tables" ]
-    }, "collections", function(global, module, exports, require, window) {
-        ((function() {
-            var GraphCollection, Table, Tables, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
-                for (var key in parent) {
-                    if (__hasProp.call(parent, key)) child[key] = parent[key];
-                }
-                function ctor() {
-                    this.constructor = child;
-                }
-                ctor.prototype = parent.prototype;
-                child.prototype = new ctor;
-                child.__super__ = parent.prototype;
-                return child;
-            };
-            GraphCollection = require("./graph_collection");
-            Table = require("../models/table");
-            module.exports = Tables = function(_super) {
-                __extends(Tables, _super);
-                function Tables() {
-                    Tables.__super__.constructor.apply(this, arguments);
-                }
-                Tables.prototype.model = Table;
-                return Tables;
-            }(GraphCollection);
-        })).call(this);
-    });
-    register({
-        collections: [ "../models/database" ],
-        "views\\server\\toolbox": [ "../../../models/database" ]
+        models: [ "./database" ],
+        "views\\server\\toolbox": [ "../../../models/database" ],
+        lib: [ "../models/database" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
-            var Database, GraphModel, Tables, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Database, NodeModel, Table, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -322,51 +236,24 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            GraphModel = require("./graph_model");
-            Tables = require("../collections/tables");
+            NodeModel = require("./node_model");
+            Table = require("./table");
             module.exports = Database = function(_super) {
                 __extends(Database, _super);
                 function Database() {
                     Database.__super__.constructor.apply(this, arguments);
                 }
-                Database.prototype.Children = Tables;
+                Database.Child = Table;
                 return Database;
-            }(GraphModel);
+            }(NodeModel);
         })).call(this);
     });
     register({
-        models: [ "../collections/databases" ]
-    }, "collections", function(global, module, exports, require, window) {
-        ((function() {
-            var Database, Databases, GraphCollection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
-                for (var key in parent) {
-                    if (__hasProp.call(parent, key)) child[key] = parent[key];
-                }
-                function ctor() {
-                    this.constructor = child;
-                }
-                ctor.prototype = parent.prototype;
-                child.prototype = new ctor;
-                child.__super__ = parent.prototype;
-                return child;
-            };
-            Database = require("../models/database");
-            GraphCollection = require("./graph_collection");
-            module.exports = Databases = function(_super) {
-                __extends(Databases, _super);
-                function Databases() {
-                    Databases.__super__.constructor.apply(this, arguments);
-                }
-                Databases.prototype.model = Database;
-                return Databases;
-            }(GraphCollection);
-        })).call(this);
-    });
-    register({
-        "views\\server": [ "../../models/server" ]
+        "views\\server": [ "../../models/server" ],
+        "views\\server\\toolbox": [ "../../../models/server" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
-            var Databases, GraphModel, Server, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Database, NodeModel, Server, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -378,16 +265,16 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            Databases = require("../collections/databases");
-            GraphModel = require("./graph_model");
+            Database = require("./database");
+            NodeModel = require("./node_model");
             module.exports = Server = function(_super) {
                 __extends(Server, _super);
                 function Server() {
                     Server.__super__.constructor.apply(this, arguments);
                 }
-                Server.prototype.Children = Databases;
+                Server.Child = Database;
                 return Server;
-            }(GraphModel);
+            }(NodeModel);
         })).call(this);
     });
     register({
@@ -412,37 +299,98 @@
                     this.toolbox = toolbox;
                     this.node = node;
                     this.el = $(this.template({
-                        name: this.node.model.get("name")
+                        name: this.node.get("name")
                     }));
                     Section.__super__.constructor.call(this);
                 }
                 Section.prototype.render = function() {
                     return this.el;
                 };
-                Section.prototype.add_child = function(request_args) {
+                Section.prototype.add_child = function() {
                     var Child, _this = this;
-                    Child = this.node.model.constructor.prototype.Children.prototype.model;
-                    $("#overlay").show().fadeTo(250, .5);
-                    return socket.request("add_" + Child.name.toLowerCase(), request_args, function(err, attributes) {
-                        var child, node, tree;
-                        $("#overlay").fadeTo(250, 0, function() {
-                            return $(this).hide();
-                        });
-                        if (err) return console.log(String(err));
-                        child = new Child($.extend({}, attributes, {
-                            parent: _this.node.model
-                        }));
-                        node = new Tree.Node(child.get("name"));
-                        node.model = child;
-                        _this.node.model.children().add(child);
-                        tree = _this.toolbox.graph.tree;
-                        tree.insert_node(node, _this.node);
-                        _this.toolbox.graph.sort_children(_this.node);
-                        tree.animate();
-                        return tree.bind_once("anim:after", function() {
-                            return _this.toolbox.graph.node_click(node);
+                    Child = this.node.constructor.Child;
+                    return this.toolbox.graph.transition(function(done) {
+                        var child;
+                        child = new Child;
+                        child.parent = _this.node;
+                        return child.save({}, {
+                            complete: done,
+                            success: function(model) {
+                                _this.node.get("children").add(model);
+                                _this.node.tree.animate();
+                                return _this.node.tree.bind_once("anim:after", function() {
+                                    return _this.toolbox.graph.node_click(model);
+                                });
+                            },
+                            error: function(_, err) {
+                                return console.log(err.stack);
+                            }
                         });
                     });
+                };
+                Section.prototype.drop = function() {
+                    var _this = this;
+                    return this.toolbox.graph.transition(function(done) {
+                        return _this.node.destroy({
+                            complete: done,
+                            success: function() {
+                                var parent;
+                                parent = _this.node.parent;
+                                _this.node.tree.remove_node(_this.node);
+                                return _this.toolbox.graph.node_click(parent);
+                            },
+                            error: function(_, err) {
+                                return console.log(err.stack);
+                            }
+                        });
+                    });
+                };
+                Section.prototype.rename = function() {
+                    var $input, rename, _this = this;
+                    rename = function(e) {
+                        var new_name, old_name;
+                        if (e.type === "keypress" && e.which !== 13) return;
+                        old_name = _this.node.get("name");
+                        new_name = $input.val().toLowerCase();
+                        _this.node.set({
+                            name: new_name
+                        });
+                        if (old_name === new_name) return;
+                        return _this.toolbox.graph.transition(function(done) {
+                            var child, _i, _len, _ref;
+                            _ref = _this.node.children;
+                            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                                child = _ref[_i];
+                                _this.node.tree.remove_node(child);
+                            }
+                            _this.node.tree.animate();
+                            return _this.node.tree.bind_once("anim:after", function() {
+                                return _this.node.save({}, {
+                                    success: function(model) {
+                                        return model.get("children").fetch({
+                                            complete: done,
+                                            success: function() {
+                                                _this.$("h1").text(model.get("name"));
+                                                return _this.node.tree.animate();
+                                            },
+                                            error: function(_, err) {
+                                                return console.log(err.stack);
+                                            }
+                                        });
+                                    },
+                                    error: function(_, err) {
+                                        done();
+                                        return console.log(err.stack);
+                                    }
+                                });
+                            });
+                        });
+                    };
+                    this.node.$label.html("");
+                    return $input = $("<input/>").attr({
+                        type: "text",
+                        value: this.node.get("name")
+                    }).appendTo(this.node.$label).focus().select().bind("blur", rename).bind("keypress", rename);
                 };
                 return Section;
             }(Backbone.View);
@@ -655,10 +603,10 @@
         };
     });
     register({
-        "views\\server\\toolbox": [ "./database_section" ]
+        "views\\server\\toolbox": [ "./database" ]
     }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var DatabaseSection, Section, Table, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var DatabaseSection, Section, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -671,7 +619,6 @@
                 return child;
             };
             Section = require("./section");
-            Table = require("../../../models/table");
             module.exports = DatabaseSection = function(_super) {
                 __extends(DatabaseSection, _super);
                 function DatabaseSection() {
@@ -680,60 +627,8 @@
                 DatabaseSection.prototype.template = require("../../../templates/toolbox/database");
                 DatabaseSection.prototype.events = {
                     "click .add": "add_child",
-                    "click .drop": "drop_database",
-                    "click .rename": "rename_database"
-                };
-                DatabaseSection.prototype.add_child = function() {
-                    return DatabaseSection.__super__.add_child.call(this, {
-                        database: this.node.model.get("name")
-                    });
-                };
-                DatabaseSection.prototype.drop_database = function() {
-                    var _this = this;
-                    $("#overlay").show().fadeTo(250, .5);
-                    return global.socket.request("drop_database", {
-                        database: this.node.model.get("name")
-                    }, function(err) {
-                        var parent;
-                        $("#overlay").fadeTo(250, 0, function() {
-                            return $(this).hide();
-                        });
-                        if (err) return console.log(String(err));
-                        parent = _this.node.parent;
-                        _this.toolbox.graph.tree.remove_node(_this.node);
-                        return _this.toolbox.graph.node_click(parent);
-                    });
-                };
-                DatabaseSection.prototype.rename_database = function() {
-                    var $input, rename, _this = this;
-                    rename = function(e) {
-                        var new_name;
-                        if (e.type === "keypress" && e.which !== 13) return;
-                        new_name = $input.val().toLowerCase();
-                        if (new_name === _this.node.model.get("name")) {
-                            _this.node.$label.text(new_name);
-                            return;
-                        }
-                        $input.val(new_name);
-                        $("#overlay").show().fadeTo(250, .5);
-                        return global.socket.request("rename_database", {
-                            old_name: _this.node.model.get("name"),
-                            new_name: new_name
-                        }, function(err, database) {
-                            $("#overlay").fadeTo(250, 0, function() {
-                                return $(this).hide();
-                            });
-                            if (err) return console.log(String(err));
-                            _this.node.model.set(database);
-                            _this.node.$label.text(database.name);
-                            return _this.$("h1").text(database.name);
-                        });
-                    };
-                    this.node.$label.html("");
-                    return $input = $("<input/>").attr({
-                        type: "text",
-                        value: this.node.model.get("name")
-                    }).appendTo(this.node.$label).focus().select().bind("blur", rename).bind("keypress", rename);
+                    "click .drop": "drop",
+                    "click .rename": "rename"
                 };
                 return DatabaseSection;
             }(Section);
@@ -974,7 +869,7 @@
         };
     });
     register({
-        "views\\server\\toolbox": [ "./field_section" ]
+        "views\\server\\toolbox": [ "./field" ]
     }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
             var FieldSection, Section, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
@@ -1095,10 +990,10 @@
         };
     });
     register({
-        "views\\server\\toolbox": [ "./server_section" ]
+        "views\\server\\toolbox": [ "./server" ]
     }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var Database, Section, ServerSection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Section, ServerSection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1110,7 +1005,6 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            Database = require("../../../models/database");
             Section = require("./section");
             module.exports = ServerSection = function(_super) {
                 __extends(ServerSection, _super);
@@ -1120,9 +1014,6 @@
                 ServerSection.prototype.template = require("../../../templates/toolbox/server");
                 ServerSection.prototype.events = {
                     "click .add": "add_child"
-                };
-                ServerSection.prototype.add_child = function() {
-                    return ServerSection.__super__.add_child.call(this);
                 };
                 return ServerSection;
             }(Section);
@@ -1279,10 +1170,10 @@
         };
     });
     register({
-        "views\\server\\toolbox": [ "./table_section" ]
+        "views\\server\\toolbox": [ "./table" ]
     }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var Field, Section, TableSection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Section, TableSection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1294,7 +1185,6 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            Field = require("../../../models/field");
             Section = require("./section");
             module.exports = TableSection = function(_super) {
                 __extends(TableSection, _super);
@@ -1304,8 +1194,8 @@
                 TableSection.prototype.template = require("../../../templates/toolbox/table");
                 TableSection.prototype.events = {
                     "click .add": "add_child",
-                    "click .drop": "drop_table",
-                    "click .rename": "rename_table"
+                    "click .drop": "drop",
+                    "click .rename": "rename"
                 };
                 TableSection.prototype.add_child = function() {
                     var child, i, match, model, node, tree, _i, _len, _ref, _this = this;
@@ -1330,55 +1220,6 @@
                         return _this.toolbox.graph.node_click(node);
                     });
                 };
-                TableSection.prototype.drop_table = function() {
-                    var _this = this;
-                    $("#overlay").show().fadeTo(250, .5);
-                    return global.socket.request("drop_table", {
-                        database: this.node.model.get("parent").get("name"),
-                        table: this.node.model.get("name")
-                    }, function(err) {
-                        var parent;
-                        $("#overlay").fadeTo(250, 0, function() {
-                            return $(this).hide();
-                        });
-                        if (err) return console.log(String(err));
-                        parent = _this.node.parent;
-                        _this.toolbox.graph.tree.remove_node(_this.node);
-                        return _this.toolbox.graph.node_click(parent);
-                    });
-                };
-                TableSection.prototype.rename_table = function() {
-                    var $input, rename, _this = this;
-                    rename = function(e) {
-                        var new_name;
-                        if (e.type === "keypress" && e.which !== 13) return;
-                        new_name = $input.val().toLowerCase();
-                        if (new_name === _this.node.model.get("name")) {
-                            _this.node.$label.text(new_name);
-                            return;
-                        }
-                        $input.val(new_name);
-                        $("#overlay").show().fadeTo(250, .5);
-                        return global.socket.request("rename_table", {
-                            database: _this.node.model.get("parent").get("name"),
-                            old_name: _this.node.model.get("name"),
-                            new_name: new_name
-                        }, function(err, table) {
-                            $("#overlay").fadeTo(250, 0, function() {
-                                return $(this).hide();
-                            });
-                            if (err) return console.log(String(err));
-                            _this.node.model.set(table);
-                            _this.node.$label.text(table.name);
-                            return _this.$("h1").text(table.name);
-                        });
-                    };
-                    this.node.$label.html("");
-                    return $input = $("<input/>").attr({
-                        type: "text",
-                        value: this.node.model.get("name")
-                    }).appendTo(this.node.$label).focus().select().bind("blur", rename).bind("keypress", rename);
-                };
                 return TableSection;
             }(Section);
         })).call(this);
@@ -1387,7 +1228,7 @@
         "views\\server": [ "./toolbox" ]
     }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var Sections, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Database, Field, Sections, Server, Table, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1399,11 +1240,15 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
+            Database = require("../../../models/database");
+            Field = require("../../../models/field");
+            Server = require("../../../models/server");
+            Table = require("../../../models/table");
             Sections = {};
-            Sections.database = require("./database_section");
-            Sections.field = require("./field_section");
-            Sections.server = require("./server_section");
-            Sections.table = require("./table_section");
+            Sections.database = require("./database");
+            Sections.field = require("./field");
+            Sections.server = require("./server");
+            Sections.table = require("./table");
             module.exports = ToolboxView = function(_super) {
                 __extends(ToolboxView, _super);
                 function ToolboxView(el, graph) {
@@ -1414,17 +1259,17 @@
                 ToolboxView.prototype.update = function(node) {
                     var k, nodes;
                     nodes = {};
-                    switch (node.model.constructor.name) {
-                      case "Server":
+                    switch (node.constructor) {
+                      case Server:
                         nodes.server = node;
                         break;
-                      case "Database":
+                      case Database:
                         nodes.database = node;
                         break;
-                      case "Table":
+                      case Table:
                         nodes.table = node;
                         break;
-                      case "Field":
+                      case Field:
                         nodes.field = node;
                     }
                     if (nodes.field) nodes.table = nodes.field.parent;
@@ -1458,11 +1303,7 @@
         "views\\server": [ "./graph" ]
     }, "views\\server", function(global, module, exports, require, window) {
         ((function() {
-            var GraphView, Server, Table, ToolboxView, __bind = function(fn, me) {
-                return function() {
-                    return fn.apply(me, arguments);
-                };
-            }, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Field, GraphView, Server, Table, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1473,62 +1314,31 @@
                 child.prototype = new ctor;
                 child.__super__ = parent.prototype;
                 return child;
-            }, __indexOf = Array.prototype.indexOf || function(item) {
-                for (var i = 0, l = this.length; i < l; i++) {
-                    if (i in this && this[i] === item) return i;
-                }
-                return -1;
             };
+            Field = require("../../models/field");
             Server = require("../../models/server");
             Table = require("../../models/table");
             ToolboxView = require("./toolbox");
             module.exports = GraphView = function(_super) {
-                var default_node_cmp;
                 __extends(GraphView, _super);
-                default_node_cmp = function(a, b) {
-                    var a_name, b_name;
-                    a_name = a.model.get("name").toLowerCase();
-                    b_name = b.model.get("name").toLowerCase();
-                    if (a_name < b_name) return -1;
-                    if (a_name > b_name) return +1;
-                    return 0;
-                };
                 function GraphView(el) {
                     this.el = el;
-                    this.node_click = __bind(this.node_click, this);
                     GraphView.__super__.constructor.call(this);
                 }
                 GraphView.prototype.initialize = function() {
                     var _this = this;
-                    this.$ruler = $("<div/>").attr({
-                        id: "ruler"
-                    }).appendTo(this.el);
                     this.tree = global.tree = new Tree(this.el);
-                    this.tree.bind("node:add", this.node_add.bind(this));
                     this.tree.bind("node:click", this.node_click.bind(this));
-                    this.tree.bind("node:remove", this.node_remove.bind(this));
                     return socket.request("get_server", function(err, server) {
-                        if (err) throw err;
-                        _this.tree.set_root(server.name);
-                        _this.tree.root.model = new Server(server);
+                        if (err) console.log(err.stack);
+                        _this.tree.set_root(new Server(server));
                         _this.tree.set_centre(_this.tree.root);
                         _this.tree.refresh();
                         return _this.node_click(_this.tree.root);
                     });
                 };
-                GraphView.prototype.node_add = function(node, context) {
-                    if (node.model == null) {
-                        node.model = context != null ? context.model.children().find({
-                            name: node.$label.text()
-                        }) : void 0;
-                    }
-                    return this.set_label_text(node.$label);
-                };
-                GraphView.prototype.node_remove = function(node) {
-                    return delete node.model;
-                };
                 GraphView.prototype.node_click = function(node) {
-                    var direction, path, _i, _len, _ref;
+                    var child, direction, finish_move, grandchild, ids, path, sibling, _i, _j, _len, _len2, _ref, _ref2, _this = this;
                     if (node.$elem.hasClass("selected")) return;
                     if (parseInt(node.$elem.attr("data-depth")) < parseInt(this.$(".selected").attr("data-depth"))) {
                         direction = "up";
@@ -1543,77 +1353,64 @@
                         path.$elem.addClass("in-path");
                     }
                     this.tree.unbind("node:click", this.node_click);
-                    return this["move_" + direction](node);
-                };
-                GraphView.prototype.move_down = function(node) {
-                    var sibling, _i, _len, _ref, _this = this;
-                    if (node.model.constructor.name !== "Field") {
-                        _ref = node.siblings();
-                        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                            sibling = _ref[_i];
-                            this.tree.remove_node(sibling);
+                    if (direction === "down") {
+                        if (!(node instanceof Field)) {
+                            _ref2 = node.siblings();
+                            for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+                                sibling = _ref2[_j];
+                                this.tree.remove_node(sibling);
+                            }
                         }
+                    } else {
+                        ids = function() {
+                            var _k, _l, _len3, _len4, _ref3, _ref4, _results;
+                            _ref3 = node.children;
+                            _results = [];
+                            for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
+                                child = _ref3[_k];
+                                _ref4 = child.children.slice(0);
+                                for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
+                                    grandchild = _ref4[_l];
+                                    this.tree.remove_node(grandchild);
+                                }
+                                _results.push(child.id);
+                            }
+                            return _results;
+                        }.call(this);
                     }
                     this.tree.set_centre(node);
                     this.tree.animate();
+                    finish_move = function(node) {
+                        _this.tree.bind("node:click", _this.node_click.bind(_this));
+                        return _this.toolbox.update(node);
+                    };
                     return this.tree.bind_once("anim:after", function() {
-                        if (!(node.model.id && node.model.children())) {
-                            return _this.finish_move(node);
-                        }
-                        _this.$("#overlay").show().fadeTo(250, .5);
-                        return node.model.fetch_children(function(err, children) {
-                            _this.$("#overlay").fadeTo(250, 0, function() {
-                                return $(this).hide();
-                            });
-                            if (err) return console.log(String(err));
-                            children.each(function(child) {
-                                return _this.tree.insert_node(child.get("name"), node);
-                            });
-                            _this.tree.animate();
-                            return _this.tree.bind_once("anim:after", function() {
-                                return _this.finish_move(node);
+                        if (!(node.id && node.get("children"))) return finish_move(node);
+                        return _this.transition(function(done) {
+                            return node.get("children").fetch({
+                                complete: done,
+                                success: function() {
+                                    _this.tree.animate();
+                                    return _this.tree.bind_once("anim:after", function() {
+                                        return finish_move(node);
+                                    });
+                                },
+                                error: function(_, err) {
+                                    return console.log(err.stack);
+                                }
                             });
                         });
                     });
                 };
-                GraphView.prototype.move_up = function(node) {
-                    var child, grandchild, ids, _i, _j, _len, _len2, _ref, _ref2, _this = this;
-                    ids = [];
-                    _ref = node.children.slice(0);
-                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                        child = _ref[_i];
-                        ids.push(child.model.id);
-                        _ref2 = child.children.slice(0);
-                        for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-                            grandchild = _ref2[_j];
-                            this.tree.remove_node(grandchild);
-                        }
-                    }
-                    this.tree.set_centre(node);
-                    this.tree.animate();
-                    return this.tree.bind_once("anim:after", function() {
-                        _this.$("#overlay").show().fadeTo(250, .5);
-                        return node.model.fetch_children(function(err, children) {
-                            _this.$("#overlay").fadeTo(250, 0, function() {
-                                return $(this).hide();
-                            });
-                            if (err) return console.log(String(err));
-                            children.each(function(child) {
-                                var _ref3;
-                                if (_ref3 = child.id, __indexOf.call(ids, _ref3) >= 0) return;
-                                return _this.tree.insert_node(child.get("name"), node);
-                            });
-                            if (!(node.model instanceof Table)) _this.sort_children(node);
-                            _this.tree.animate();
-                            return _this.tree.bind_once("anim:after", function() {
-                                return _this.finish_move(node);
-                            });
+                GraphView.prototype.transition = function(callback) {
+                    var done;
+                    done = function() {
+                        return $("#overlay").fadeTo(250, 0, function() {
+                            return $(this).hide();
                         });
-                    });
-                };
-                GraphView.prototype.finish_move = function(node) {
-                    this.tree.bind("node:click", this.node_click);
-                    return this.toolbox.update(node);
+                    };
+                    $("#overlay").show().fadeTo(250, .5);
+                    return callback(done);
                 };
                 GraphView.prototype.set_label_text = function($label) {
                     var label, ratio;
@@ -1627,10 +1424,6 @@
                     } else {
                         return $label.text(label);
                     }
-                };
-                GraphView.prototype.sort_children = function(node, cmp) {
-                    if (cmp == null) cmp = default_node_cmp;
-                    return node.children.sort(cmp);
                 };
                 return GraphView;
             }(Backbone.View);
@@ -1971,7 +1764,7 @@
         })).call(this);
     });
     register({
-        "": [ "../lib/support" ]
+        "": [ "../lib/compatibility" ]
     }, "lib", function(global, module, exports, require, window) {
         ((function() {
             jQuery.fn.animationPlayState = function(state) {
@@ -1986,6 +1779,99 @@
                 if (!handler) throw new Error("animationEnd triggering not implemented");
                 this.bind("animationend", handler);
                 return this.bind("webkitAnimationEnd", handler);
+            };
+        })).call(this);
+    });
+    register({
+        "": [ "../lib/sync" ]
+    }, "lib", function(global, module, exports, require, window) {
+        ((function() {
+            var Database, Field, Table, create_model, delete_model, read_collection, update_model;
+            Database = require("../models/database");
+            Field = require("../models/field");
+            Table = require("../models/table");
+            Backbone.sync = function(method, model, options) {
+                var callback;
+                callback = function(err, results) {
+                    if (typeof options.complete === "function") options.complete(err, results);
+                    if (err) return options.error(null, err);
+                    return options.success(results);
+                };
+                switch (method) {
+                  case "create":
+                    return create_model(model, callback);
+                  case "delete":
+                    return delete_model(model, callback);
+                  case "read":
+                    if (model.model != null) return read_collection(model, callback);
+                    break;
+                  case "update":
+                    return update_model(model, callback);
+                  default:
+                    console.log("unhandled method", method);
+                }
+                return console.log("unhandled sync", method, model);
+            };
+            create_model = function(model, callback) {
+                switch (model.constructor) {
+                  case Database:
+                    return socket.request("add_database", callback);
+                  case Table:
+                    return socket.request("add_table", {
+                        database: model.parent.get("name")
+                    }, callback);
+                  default:
+                    return console.log("unhandled model create", model);
+                }
+            };
+            delete_model = function(model, callback) {
+                switch (model.constructor) {
+                  case Database:
+                    return socket.request("drop_database", {
+                        database: model.get("name")
+                    }, callback);
+                  case Table:
+                    return socket.request("drop_table", {
+                        database: model.parent.get("name"),
+                        table: model.get("name")
+                    }, callback);
+                  default:
+                    return console.log("unhandled model delete", model);
+                }
+            };
+            read_collection = function(collection, callback) {
+                switch (collection.model) {
+                  case Database:
+                    return socket.request("get_databases", callback);
+                  case Table:
+                    return socket.request("get_tables", {
+                        database: collection.parent.get("name")
+                    }, callback);
+                  case Field:
+                    return socket.request("get_fields", {
+                        database: collection.parent.parent.get("name"),
+                        table: collection.parent.get("name")
+                    }, callback);
+                  default:
+                    return console.log("unhandled collection read", collection);
+                }
+            };
+            update_model = function(model, callback) {
+                switch (model.constructor) {
+                  case Database:
+                    return socket.request("rename_database", {
+                        old_name: model.id.replace("" + model.parent.id + "/", ""),
+                        new_name: model.get("name")
+                    }, callback);
+                  case Table:
+                    return socket.request("rename_table", {
+                        database: model.parent.get("name"),
+                        old_name: model.id.replace("" + model.parent.id + "/", ""),
+                        new_name: model.get("name")
+                    }, callback);
+                  default:
+                    return console.log("unhandled model update", model);
+                }
             };
         })).call(this);
     });
@@ -2007,7 +1893,8 @@
             };
             LoginView = require("./views/login");
             ServerView = require("./views/server");
-            require("../lib/support");
+            require("../lib/compatibility");
+            require("../lib/sync");
             socket_request = function(request, request_data, callback) {
                 var data;
                 if (callback == null) callback = request_data;

@@ -1,8 +1,11 @@
 LoginView  = require './views/login'
 ServerView = require './views/server'
 
-# Include supporting jQuery plugins
-require '../lib/support'
+# Include extra jQuery compatbility plugins
+require '../lib/compatibility'
+
+# Include the Backbone.sync override
+require '../lib/sync'
 
 ###
 The `socket_request` protocol provides an abstraction above typical send/receive
@@ -31,8 +34,8 @@ class Router extends Backbone.Router
   The routes to map.
   ###
   routes:
-    '/'      : 'home'
-    '/login' : 'login'
+    '/':      'home'
+    '/login': 'login'
   
   ###
   The `home` action simply displays the server page if they are logged in, or

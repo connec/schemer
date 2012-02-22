@@ -1,12 +1,19 @@
-Fields     = require '../collections/fields'
-GraphModel = require './graph_model'
+Field     = require './field'
+NodeModel = require './node_model'
 
 ###
 A Database model represents a database in a server.
 ###
-module.exports = class Table extends GraphModel
+module.exports = class Table extends NodeModel
   
   ###
-  Tables contain fields.
+  The class of this model's children.
   ###
-  Children: Fields
+  @Child: Field
+  
+  ###
+  Extend the constructor to disable child ordering.
+  ###
+  constructor: ->
+    super
+    @get('children').comparator = null

@@ -68,7 +68,7 @@ util     = require 'util'
   css  = stylus(styl).set('filename', "#{@style}.styl").use nib()
   css.render (err, css) =>
     if err
-      console.log String err
+      console.log err.stack
       return
     fs.writeFileSync "#{@style}.css", css
     console.log "Built #{@style}"

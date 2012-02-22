@@ -1,6 +1,6 @@
-GraphModel = require './graph_model'
+NodeModel = require './node_model'
 
 ###
 A Field model represents a field in a table.
 ###
-module.exports = class Field extends GraphModel
+module.exports = class Field extends NodeModel

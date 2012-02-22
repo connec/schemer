@@ -1,12 +1,12 @@
-GraphModel = require './graph_model'
-Tables     = require '../collections/tables'
+NodeModel = require './node_model'
+Table     = require './table'
 
 ###
 A Database model represents a database in a server.
 ###
-module.exports = class Database extends GraphModel
+module.exports = class Database extends NodeModel
   
   ###
-  Databases contain tables.
+  The class of this model's children.
   ###
-  Children: Tables
+  @Child: Table

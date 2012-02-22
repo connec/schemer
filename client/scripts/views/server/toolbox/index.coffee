@@ -1,8 +1,13 @@
+Database = require '../../../models/database'
+Field    = require '../../../models/field'
+Server   = require '../../../models/server'
+Table    = require '../../../models/table'
+
 Sections = {}
-Sections.database = require './database_section'
-Sections.field    = require './field_section'
-Sections.server   = require './server_section'
-Sections.table    = require './table_section'
+Sections.database = require './database'
+Sections.field    = require './field'
+Sections.server   = require './server'
+Sections.table    = require './table'
 
 module.exports = class ToolboxView extends Backbone.View
   
@@ -17,11 +22,11 @@ module.exports = class ToolboxView extends Backbone.View
   ###
   update: (node) ->
     nodes = {}
-    switch node.model.constructor.name
-      when 'Server'   then nodes.server = node
-      when 'Database' then nodes.database = node
-      when 'Table'    then nodes.table = node
-      when 'Field'    then nodes.field = node
+    switch node.constructor
+      when Server   then nodes.server = node
+      when Database then nodes.database = node
+      when Table    then nodes.table = node
+      when Field    then nodes.field = node
     nodes.table = nodes.field.parent if nodes.field
     
     @sections = {}

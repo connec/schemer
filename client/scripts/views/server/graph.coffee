@@ -1,17 +1,9 @@
+Field       = require '../../models/field'
 Server      = require '../../models/server'
 Table       = require '../../models/table'
 ToolboxView = require './toolbox'
 
 module.exports = class GraphView extends Backbone.View
-  ###
-  The default method for comparing nodes.
-  ###
-  default_node_cmp = (a, b) ->
-    a_name = a.model.get('name').toLowerCase()
-    b_name = b.model.get('name').toLowerCase()
-    return -1 if a_name < b_name
-    return +1 if a_name > b_name
-    return 0
   
   ###
   Constructs the view.
@@ -23,22 +15,17 @@ module.exports = class GraphView extends Backbone.View
   Builds the server tree for the visualisation.
   ###
   initialize: ->
-    # Create a 'ruler' div for measuring labels
-    @$ruler = $('<div/>').attr(id: 'ruler').appendTo @el
-    
     # Construct the Tree representing the visualisation
     @tree = global.tree = new Tree @el
-    @tree.bind 'node:add', @node_add.bind @
     @tree.bind 'node:click', @node_click.bind @
-    @tree.bind 'node:remove', @node_remove.bind @
     
     # Load the server details
+    
     socket.request 'get_server', (err, server) =>
-      throw err if err
+      console.log err.stack if err
       
       # Prepare the root of the tree
-      @tree.set_root server.name
-      @tree.root.model = new Server server
+      @tree.set_root new Server server
       @tree.set_centre @tree.root
       @tree.refresh()
       
@@ -46,26 +33,9 @@ module.exports = class GraphView extends Backbone.View
       @node_click @tree.root
   
   ###
-  Called when a new node is added to the tree.
-  ###
-  node_add: (node, context) ->
-    # Try and find the model represented by this node
-    node.model ?= context?.model.children().find name: node.$label.text()
-    
-    # Adjust the label text so it fits in the node
-    @set_label_text node.$label
-  
-  ###
-  Called when a node is removed from the tree.
-  ###
-  node_remove: (node) ->
-    # Remove the model property
-    delete node.model
-  
-  ###
   Handler for clicks on nodes.
   ###
-  node_click: (node) =>
+  node_click: (node) ->
     # Do nothing if this bode is already selected
     return if node.$elem.hasClass 'selected'
     
@@ -84,64 +54,47 @@ module.exports = class GraphView extends Backbone.View
     @tree.unbind 'node:click', @node_click
     
     # Execute the methods for the direction we're moving in
-    @["move_#{direction}"] node
-  
-  ###
-  Updates the graph after a transition deeper into the graph.
-  ###
-  move_down: (node) ->
-    # First, remove all siblings and centre the view on the node.
-    unless node.model.constructor.name is 'Field'
-      @tree.remove_node sibling for sibling in node.siblings()
+    if direction is 'down'
+      # Remove all siblings and centre the view on the node
+      @tree.remove_node sibling for sibling in node.siblings() unless node instanceof Field
+    else
+      # Remove all grand-children
+      ids = for child in node.children
+        @tree.remove_node grandchild for grandchild in child.children[0..]
+        child.id
+    
     @tree.set_centre node
     @tree.animate()
     
-    # After the animation, add all the new node's children
+    # Convenience callback for finishing a move
+    finish_move = (node) =>
+      # Rebind the click handler
+      @tree.bind 'node:click', @node_click.bind @
+      
+      # Update the toolbox
+      @toolbox.update node
+    
+    # After the animation add all the children to the visualisation
     @tree.bind_once 'anim:after', =>
-      return @finish_move node unless node.model.id and node.model.children()
-      @$('#overlay').show().fadeTo 250, 0.5
-      node.model.fetch_children (err, children) =>
-        @$('#overlay').fadeTo 250, 0, -> $(@).hide()
-        return console.log String err if err
-        children.each (child) =>
-          @tree.insert_node child.get('name'), node
-        @tree.animate()
-        @tree.bind_once 'anim:after', => @finish_move node
+      # Finish now unless this model has been loaded from the database and has children
+      return finish_move node unless node.id and node.get 'children'
+      @transition (done) =>
+        node.get('children').fetch
+          complete: done
+          success: =>
+            @tree.animate()
+            @tree.bind_once 'anim:after', -> finish_move node
+          error: (_, err) =>
+            console.log err.stack
   
   ###
-  Updates the graph after a transition higher up the graph.
+  Handles the dimming of the screen during a transition.
   ###
-  move_up: (node) ->
-    # First, remove all grand-children
-    ids = []
-    for child in node.children[0..]
-      ids.push child.model.id
-      @tree.remove_node grandchild for grandchild in child.children[0..]
-    @tree.set_centre node
-    @tree.animate()
-    
-    # After the animation, add in all the direct children
-    @tree.bind_once 'anim:after', =>
-      @$('#overlay').show().fadeTo 250, 0.5
-      node.model.fetch_children (err, children) =>
-        @$('#overlay').fadeTo 250, 0, -> $(@).hide()
-        return console.log String err if err
-        children.each (child) =>
-          return if child.id in ids
-          @tree.insert_node child.get('name'), node
-        @sort_children node unless node.model instanceof Table
-        @tree.animate()
-        @tree.bind_once 'anim:after', => @finish_move node
-  
-  ###
-  Tidies up after a move has been completed.
-  ###
-  finish_move: (node) ->
-    # Rebind the click handler
-    @tree.bind 'node:click', @node_click
-    
-    # Update the toolbox
-    @toolbox.update node
+  transition: (callback) ->
+    done = ->
+      $('#overlay').fadeTo 250, 0, -> $(@).hide()
+    $('#overlay').show().fadeTo 250, 0.5
+    callback done
   
   ###
   Shorten a node's name inline with the node width.
@@ -154,9 +107,3 @@ module.exports = class GraphView extends Backbone.View
       $label.text label.slice(0, Math.floor(ratio * label.length) - 3) + '...'
     else
       $label.text label
-  
-  ###
-  Sorts the children of the given node.
-  ###
-  sort_children: (node, cmp = default_node_cmp) ->
-    node.children.sort cmp

@@ -36,7 +36,7 @@ fs.watch 'server', (event) ->
       
       console.log "Listening on port #{port}"
     catch err
-      console.log String err
+      console.log err.stack
     
     server_timer = null
   , 50
@@ -45,7 +45,7 @@ fs.watch 'server', (event) ->
 squash = new Squash build.squash_options
 squash.watch (err, js) ->
   if err
-    console.log String err
+    console.log err.stack
     return
   fs.writeFileSync "#{build.script}.js", js
   console.log "Rebuilt #{build.script}"

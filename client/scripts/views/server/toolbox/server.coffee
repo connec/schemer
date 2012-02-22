@@ -1,5 +1,4 @@
-Database = require '../../../models/database'
-Section  = require './section'
+Section = require './section'
 
 module.exports = class ServerSection extends Section
   
@@ -13,9 +12,3 @@ module.exports = class ServerSection extends Section
   ###
   events:
     'click .add': 'add_child'
-  
-  ###
-  Adds a database to the visualisation.
-  ###
-  add_child: ->
-    super()

@@ -36,7 +36,7 @@ module.exports = class SocketRequest
   ###
   respond: (err, result) ->
     # Log the error for debugging
-    console.log String err if err
+    console.log err.stack if err
     
     # Close the database
     @database?.end()
