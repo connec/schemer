@@ -66,15 +66,26 @@
           .label
             font-weight bold
         
-        &.in-path
+        /*&.in-path
           .edge
             color #cc6
           
           .label
             background-image linear-gradient(top, #ff9, #cc6)
-            border-color     #cc6
+            border-color     #cc6*/
         
         &.in-path.selected
           .label
             background-image linear-gradient(top, #9f9, #6c6)
             border-color     #6c6
+            
+        &.pk
+          .label:after
+            display block
+            position absolute
+            top      1px
+            left     1px
+            content ' '
+            width   175px
+            height  30px
+            background-image url('../images/pk-overlay.png')

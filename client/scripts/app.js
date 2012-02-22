@@ -180,7 +180,12 @@
             module.exports = Field = function(_super) {
                 __extends(Field, _super);
                 function Field() {
+                    var _this = this;
                     Field.__super__.constructor.apply(this, arguments);
+                    if (this.get("key") === "primary") this.$elem.addClass("pk");
+                    this.bind("change:key", function() {
+                        if (_this.get("key") === "primary") return _this.$elem.addClass("pk");
+                    });
                 }
                 return Field;
             }(NodeModel);
@@ -1338,7 +1343,7 @@
                     });
                 };
                 GraphView.prototype.node_click = function(node) {
-                    var child, direction, finish_move, grandchild, ids, path, sibling, _i, _j, _len, _len2, _ref, _ref2, _this = this;
+                    var child, direction, grandchild, ids, path, sibling, _i, _j, _len, _len2, _ref, _ref2, _this = this;
                     if (node.$elem.hasClass("selected")) return;
                     if (parseInt(node.$elem.attr("data-depth")) < parseInt(this.$(".selected").attr("data-depth"))) {
                         direction = "up";
@@ -1380,19 +1385,20 @@
                     }
                     this.tree.set_centre(node);
                     this.tree.animate();
-                    finish_move = function(node) {
-                        _this.tree.bind("node:click", _this.node_click.bind(_this));
-                        return _this.toolbox.update(node);
-                    };
                     return this.tree.bind_once("anim:after", function() {
-                        if (!(node.id && node.get("children"))) return finish_move(node);
+                        if (!(node.id && node.get("children"))) {
+                            _this.tree.bind("node:click", _this.node_click.bind(_this));
+                            _this.toolbox.update(node);
+                            return;
+                        }
                         return _this.transition(function(done) {
                             return node.get("children").fetch({
                                 complete: done,
                                 success: function() {
+                                    _this.toolbox.update(node);
                                     _this.tree.animate();
                                     return _this.tree.bind_once("anim:after", function() {
-                                        return finish_move(node);
+                                        return _this.tree.bind("node:click", _this.node_click.bind(_this));
                                     });
                                 },
                                 error: function(_, err) {

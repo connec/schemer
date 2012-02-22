@@ -218,6 +218,13 @@ body {
 #server #graph .wrapper .node {
   display: block;
   position: absolute;
+/*&.in-path
+          .edge
+            color #cc6
+          
+          .label
+            background-image linear-gradient(top, #ff9, #cc6)
+            border-color     #cc6*/
 }
 #server #graph .wrapper .node .edge {
   position: absolute;
@@ -252,22 +259,22 @@ body {
 #server #graph .wrapper .node.unsaved .label {
   font-weight: bold;
 }
-#server #graph .wrapper .node.in-path .edge {
-  color: #cc6;
-}
-#server #graph .wrapper .node.in-path .label {
-  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #ff9), color-stop(1, #cc6));
-  background-image: -webkit-linear-gradient(top, #ff9 0%, #cc6 100%);
-  background-image: -moz-linear-gradient(top, #ff9 0%, #cc6 100%);
-  background-image: linear-gradient(top, #ff9 0%, #cc6 100%);
-  border-color: #cc6;
-}
 #server #graph .wrapper .node.in-path.selected .label {
   background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #9f9), color-stop(1, #6c6));
   background-image: -webkit-linear-gradient(top, #9f9 0%, #6c6 100%);
   background-image: -moz-linear-gradient(top, #9f9 0%, #6c6 100%);
   background-image: linear-gradient(top, #9f9 0%, #6c6 100%);
   border-color: #6c6;
+}
+#server #graph .wrapper .node.pk .label:after {
+  display: block;
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  content: ' ';
+  width: 175px;
+  height: 30px;
+  background-image: url("../images/pk-overlay.png");
 }
 #toolbox {
   position: fixed;
@@ -284,9 +291,37 @@ body {
 }
 #toolbox section h1 {
   margin-bottom: 10px;
+  padding: 5px;
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #eee), color-stop(1, #bbb));
+  background-image: -webkit-linear-gradient(top, #eee 0%, #bbb 100%);
+  background-image: -moz-linear-gradient(top, #eee 0%, #bbb 100%);
+  background-image: linear-gradient(top, #eee 0%, #bbb 100%);
+  -webkit-box-shadow: 0 1px 5px #000;
+  -moz-box-shadow: 0 1px 5px #000;
+  box-shadow: 0 1px 5px #000;
+  font-size: 1.2em;
 }
 #toolbox section a {
   cursor: pointer;
+  margin-left: 12px;
+}
+#toolbox section a:before {
+  display: inline-block;
+  position: relative;
+  top: 1px;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  content: ' ';
+}
+#toolbox section a.add:before {
+  background-image: url("../images/add-icon.png");
+}
+#toolbox section a.drop:before {
+  background-image: url("../images/drop-icon.png");
+}
+#toolbox section a.rename:before {
+  background-image: url("../images/rename-icon.png");
 }
 @-moz-keyframes rotate_clockwise {
   0% {

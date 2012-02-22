@@ -66,24 +66,20 @@ module.exports = class GraphView extends Backbone.View
     @tree.set_centre node
     @tree.animate()
     
-    # Convenience callback for finishing a move
-    finish_move = (node) =>
-      # Rebind the click handler
-      @tree.bind 'node:click', @node_click.bind @
-      
-      # Update the toolbox
-      @toolbox.update node
-    
     # After the animation add all the children to the visualisation
     @tree.bind_once 'anim:after', =>
       # Finish now unless this model has been loaded from the database and has children
-      return finish_move node unless node.id and node.get 'children'
+      unless node.id and node.get 'children'
+        @tree.bind 'node:click', @node_click.bind @
+        @toolbox.update node
+        return
       @transition (done) =>
         node.get('children').fetch
           complete: done
           success: =>
+            @toolbox.update node
             @tree.animate()
-            @tree.bind_once 'anim:after', -> finish_move node
+            @tree.bind_once 'anim:after', => @tree.bind 'node:click', @node_click.bind @
           error: (_, err) =>
             console.log err.stack
   
