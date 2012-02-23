@@ -34,7 +34,7 @@ section.field
       input.default_toggle(type='checkbox', checked=node.get('default') !== null)
     li.key
       select.key
-        option None
+        option(value='') None
         option(value='index', selected=node.get('key') == 'index') Index
         option(value='primary', selected=node.get('key') == 'primary') Primary
         option(value='unique', selected=node.get('key') == 'unique') Unique

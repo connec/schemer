@@ -35,7 +35,7 @@ module.exports = class FieldSection extends Section
     $selected = $elem.find ':selected'
     if      $elem.hasClass 'type'    then @node.set type: $selected.attr('data-type'), length: $selected.attr('data-length')
     else if $elem.hasClass 'default' then @node.set default: (if $elem.is(':disabled') then null else $elem.val())
-    else if $elem.hasClass 'key'     then @node.set key: $elem.val()
+    else if $elem.hasClass 'key'     then @node.set key: (if $elem.val() then $elem.val() else null)
     else if $elem.hasClass 'ai'      then @node.set ai: $elem.is ':checked'
     else    console.log 'bad element'
     

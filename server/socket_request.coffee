@@ -155,14 +155,8 @@ module.exports = class SocketRequest
   ###
   Creates a new field with given attributes.
   ###
-  add_field: ({database, table, field, attributes}) ->
-    @database.add_field database, table, field, attributes, @respond.bind @
-  
-  ###
-  Updates the given field.
-  ###
-  alter_field: ({database, table, field, attributes}) ->
-    @database.alter_field database, table, field, attributes, @respond.bind @
+  save_field: ({database, table, field, attributes}) ->
+    @database.save_field database, table, field, attributes, @respond.bind @
   
   ###
   Drops the given field.

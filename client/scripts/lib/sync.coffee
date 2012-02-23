@@ -38,7 +38,7 @@ create_model = (model, callback) ->
         database: model.parent.get 'name'
       , callback
     when Field
-      socket.request 'add_field',
+      socket.request 'save_field',
         database:   model.parent.parent.get 'name'
         table:      model.parent.get 'name'
         field:      model.get 'name'
@@ -106,7 +106,7 @@ update_model = (model, callback) ->
         new_name: model.get 'name'
       , callback
     when Field
-      socket.request 'alter_field',
+      socket.request 'save_field',
         database:   model.parent.parent.get 'name'
         table:      model.parent.get 'name'
         field:      model.id.replace "#{model.parent.id}/", ''

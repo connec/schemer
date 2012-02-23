@@ -7,6 +7,12 @@ The Database class provides helper methods for common database operations.
 module.exports = class Database
   
   ###
+  Private helper function to remove nullish values from an array
+  ###
+  filter = (array) ->
+    array.filter (entry) -> entry?
+  
+  ###
   Private helper function to process field descriptions returned by the database
   into a more userful format.
   ###
@@ -148,37 +154,89 @@ module.exports = class Database
     @query "drop table `#{database}`.`#{name}`", callback
   
   ###
-  Convenience method to create a field.
+  Convenience method to save a field.
   ###
-  add_field: (database, table, field, attributes, callback) ->
-    query = "alter table `#{database}`.`#{table}` add column `#{field}` #{attributes.type}"
-    query += "(#{attributes.length})" if attributes.length?
-    query += " #{if not attributes.null then 'not ' else ''}null"
-    query += " default ?" if attributes.default?
-    query += ' auto_increment' if attributes.ai
-    @query query, (if attributes.default? then [attributes.default] else []), (err) =>
-      return callback err if err
-      return @get_field database, table, field, (err, field) ->
+  save_field: (database, table, field, attributes, callback) ->
+    # Executes the save
+    save = (old_attributes = {}) =>
+      # Build the query
+      query = [
+        "alter table `#{database}`.`#{table}`"
+        "add column"                                        if not attributes.id
+        "change column `#{field}`"                          if attributes.id
+        "`#{attributes.name}` #{attributes.type}"
+        "(#{attributes.length})"                            if attributes.length?
+        "#{if not attributes.null then 'not ' else ''}null"
+        "default ?"                                         if attributes.default?
+        "auto_increment"                                    if attributes.ai
+      ]
+      @query filter(query).join(' '), filter([attributes.default]), (err) =>
         return callback err if err
-        return callback null, field
-  
-  ###
-  Convenience method to alter a field.
-  ###
-  alter_field: (database, table, field, attributes, callback) ->
-    query = "alter table `#{database}`.`#{table}` change `#{field}` `#{attributes.name}` #{attributes.type}"
-    query += "(#{attributes.length})" if attributes.length?
-    query += " #{if not attributes.null then 'not ' else ''}null"
-    query += " default ?" if attributes.default?
-    query += ' auto_increment' if attributes.ai
-    @query query, (if attributes.default? then [attributes.default] else []), (err) =>
+        
+        # Drops the old key
+        drop_key = =>
+          @drop_key database, table, field, old_attributes.key, (err) ->
+            return callback err if err
+            return add_key()    if attributes.key
+            return finish()
+        
+        # Creates the new key
+        add_key = =>
+          @add_key database, table, attributes.name, attributes.key, (err) ->
+            return callback err if err
+            return finish()
+        
+        # Executes the callback, passing the new field attributes
+        finish = =>
+          @get_field database, table, attributes.name, (err, field) ->
+            return callback err if err
+            return callback null, field
+        
+        # Decide what to do about the key
+        if attributes.id
+          return finish()   if old_attributes.key == attributes.key
+          return add_key()  unless old_attributes.key
+          return drop_key()
+        else
+          return finish() unless attributes.key
+          return add_key()
+    
+    # Just save if this is a new field
+    return save() unless attributes.id
+    
+    # Otherwise, get the old attributes
+    @get_field database, table, field, (err, field) ->
       return callback err if err
-      return @get_field database, table, attributes.name, (err, field) ->
-        return callback err if err
-        return callback null, field
+      return save field
   
   ###
   Convenience method to drop a field with the given name.
   ###
   drop_field: (database, table, field, callback) ->
     @query "alter table `#{database}`.`#{table}` drop column `#{field}`", callback
+  
+  ###
+  Convenience method to add a key to the given field.
+  ###
+  add_key: (database, table, field, type, callback) ->
+    query = [
+      "alter table `#{database}`.`#{table}` add"
+      "primary"    if type is 'primary'
+      "unique"     if type is 'unique'
+      "key"
+      "`#{field}`" unless type is 'primary'
+      "(`#{field}`)"
+    ]
+    @query filter(query).join(' '), callback
+  
+  ###
+  Convenience method to drop a key from the given field.
+  ###
+  drop_key: (database, table, field, type, callback) ->
+    query = [
+      "alter table `#{database}`.`#{table}` drop"
+      "primary"    if type is 'primary'
+      "key"
+      "`#{field}`" unless type is 'primary'
+    ]
+    @query filter(query).join(' '), callback

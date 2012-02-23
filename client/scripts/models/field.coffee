@@ -14,4 +14,7 @@ module.exports = class Field extends NodeModel
     @$elem.addClass 'pk' if @get('key') is 'primary'
     
     @bind 'change:key', =>
-      @$elem.addClass 'pk' if @get('key') is 'primary'
+      if @get('key') is 'primary'
+        @$elem.addClass 'pk'
+      else
+        @$elem.removeClass 'pk'

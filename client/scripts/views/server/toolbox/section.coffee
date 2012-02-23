@@ -36,13 +36,14 @@ module.exports = class Section extends Backbone.View
   ###
   drop: ->
     parent = @node.parent
-    drop   = => @toolbox.graph.node_click parent
-    return drop() unless @node.id
+    unless @node.id
+      parent.get('children').remove @node
+      @toolbox.graph.node_click parent
     
     @toolbox.graph.transition (done) =>
       @node.destroy
         complete: done
-        success:  drop
+        success:  => @toolbox.graph.node_click parent
         error:    (_, err) -> on_error err
   
   ###
@@ -82,7 +83,10 @@ module.exports = class Section extends Backbone.View
         @node.save {},
           success: (model) =>
             @node.$elem.removeClass 'changed'
-            @$('h1').text model.get 'name'
+            
+            # Update the view and rebind events
+            @el.replaceWith @el = $ @template {@node}
+            @delegateEvents()
             
             # Re-add the children
             return done() unless model.get 'children'

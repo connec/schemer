@@ -188,7 +188,11 @@
                     Field.__super__.constructor.apply(this, arguments);
                     if (this.get("key") === "primary") this.$elem.addClass("pk");
                     this.bind("change:key", function() {
-                        if (_this.get("key") === "primary") return _this.$elem.addClass("pk");
+                        if (_this.get("key") === "primary") {
+                            return _this.$elem.addClass("pk");
+                        } else {
+                            return _this.$elem.removeClass("pk");
+                        }
                     });
                 }
                 return Field;
@@ -338,16 +342,18 @@
                     });
                 };
                 Section.prototype.drop = function() {
-                    var drop, parent, _this = this;
+                    var parent, _this = this;
                     parent = this.node.parent;
-                    drop = function() {
-                        return _this.toolbox.graph.node_click(parent);
-                    };
-                    if (!this.node.id) return drop();
+                    if (!this.node.id) {
+                        parent.get("children").remove(this.node);
+                        this.toolbox.graph.node_click(parent);
+                    }
                     return this.toolbox.graph.transition(function(done) {
                         return _this.node.destroy({
                             complete: done,
-                            success: drop,
+                            success: function() {
+                                return _this.toolbox.graph.node_click(parent);
+                            },
                             error: function(_, err) {
                                 return on_error(err);
                             }
@@ -388,7 +394,10 @@
                             return _this.node.save({}, {
                                 success: function(model) {
                                     _this.node.$elem.removeClass("changed");
-                                    _this.$("h1").text(model.get("name"));
+                                    _this.el.replaceWith(_this.el = $(_this.template({
+                                        node: _this.node
+                                    })));
+                                    _this.delegateEvents();
                                     if (!model.get("children")) return done();
                                     return model.get("children").fetch({
                                         add: true,
@@ -1016,7 +1025,11 @@
                         lineno: 37,
                         filename: __jade[0].filename
                     });
-                    buf.push("<option>None");
+                    buf.push("<option");
+                    buf.push(attrs({
+                        value: ""
+                    }));
+                    buf.push(">None");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -1203,7 +1216,7 @@
                         });
                     } else if ($elem.hasClass("key")) {
                         this.node.set({
-                            key: $elem.val()
+                            key: $elem.val() ? $elem.val() : null
                         });
                     } else if ($elem.hasClass("ai")) {
                         this.node.set({
@@ -2168,7 +2181,7 @@
                         database: model.parent.get("name")
                     }, callback);
                   case Field:
-                    return socket.request("add_field", {
+                    return socket.request("save_field", {
                         database: model.parent.parent.get("name"),
                         table: model.parent.get("name"),
                         field: model.get("name"),
@@ -2230,7 +2243,7 @@
                         new_name: model.get("name")
                     }, callback);
                   case Field:
-                    return socket.request("alter_field", {
+                    return socket.request("save_field", {
                         database: model.parent.parent.get("name"),
                         table: model.parent.get("name"),
                         field: model.id.replace("" + model.parent.id + "/", ""),
