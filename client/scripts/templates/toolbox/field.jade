@@ -38,6 +38,8 @@ section.field
         option(value='index', selected=node.get('key') == 'index') Index
         option(value='primary', selected=node.get('key') == 'primary') Primary
         option(value='unique', selected=node.get('key') == 'unique') Unique
+    li.null
+      input.null(type='checkbox', checked=node.get('null'))
     li.ai
       input.ai(type='checkbox', checked=node.get('ai'))
     li.save

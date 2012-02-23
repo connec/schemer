@@ -1100,7 +1100,7 @@
                     });
                     buf.push("<li");
                     buf.push(attrs({
-                        "class": "ai"
+                        "class": "null"
                     }));
                     buf.push(">");
                     __jade.unshift({
@@ -1109,6 +1109,34 @@
                     });
                     __jade.unshift({
                         lineno: 42,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<input");
+                    buf.push(attrs({
+                        type: "checkbox",
+                        checked: node.get("null"),
+                        "class": "null"
+                    }));
+                    buf.push("/>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 43,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li");
+                    buf.push(attrs({
+                        "class": "ai"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 44,
                         filename: __jade[0].filename
                     });
                     buf.push("<input");
@@ -1123,7 +1151,7 @@
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 43,
+                        lineno: 45,
                         filename: __jade[0].filename
                     });
                     buf.push("<li");
@@ -1136,7 +1164,7 @@
                         filename: __jade[0].filename
                     });
                     __jade.unshift({
-                        lineno: 44,
+                        lineno: 46,
                         filename: __jade[0].filename
                     });
                     buf.push("<input");
@@ -1191,6 +1219,7 @@
                     "change select.type": "change",
                     "change input.default": "change",
                     "change select.key": "change",
+                    "change input.null": "change",
                     "change input.ai": "change",
                     "change input.default_toggle": "toggle_default",
                     "click input.save": "update",
@@ -1217,6 +1246,10 @@
                     } else if ($elem.hasClass("key")) {
                         this.node.set({
                             key: $elem.val() ? $elem.val() : null
+                        });
+                    } else if ($elem.hasClass("null")) {
+                        this.node.set({
+                            "null": $elem.is(":checked")
                         });
                     } else if ($elem.hasClass("ai")) {
                         this.node.set({
@@ -1628,6 +1661,8 @@
                         nodes.field = node;
                     }
                     if (nodes.field) nodes.table = nodes.field.parent;
+                    if (nodes.table) nodes.database = nodes.table.parent;
+                    if (nodes.database) nodes.server = nodes.database.parent;
                     this.sections = {};
                     for (k in nodes) {
                         node = nodes[k];
@@ -1638,12 +1673,12 @@
                 ToolboxView.prototype.render = function() {
                     var k, _i, _len, _ref, _results;
                     this.el.html("");
-                    _ref = [ "server", "database", "table", "field" ];
+                    _ref = [ "field", "table", "database", "server" ];
                     _results = [];
                     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                         k = _ref[_i];
                         if (this.sections[k]) {
-                            _results.push(this.el.append(this.sections[k].render()));
+                            _results.push(this.el.append(this.sections[k].render().fadeTo(0, 0).fadeTo(250, 1)));
                         } else {
                             _results.push(void 0);
                         }

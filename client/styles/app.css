@@ -340,6 +340,9 @@ body {
 #toolbox section ul.properties li.key {
   background-image: url("../images/key-icon.png");
 }
+#toolbox section ul.properties li.null {
+  background-image: url("../images/null-icon.png");
+}
 #toolbox section ul.properties li.save {
   background-image: url("../images/save-icon.png");
 }
@@ -354,7 +357,12 @@ body {
   width: 190px;
 }
 #toolbox section ul.properties li > *.default_toggle {
-  width: 20px;
+  position: relative;
+  left: 2px;
+  top: 1px;
+  width: 13px;
+  margin: 0;
+  padding: 0;
 }
 #toolbox section ul.properties li > *.save {
   width: 100px;

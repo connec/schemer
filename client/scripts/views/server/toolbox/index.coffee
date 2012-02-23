@@ -27,7 +27,9 @@ module.exports = class ToolboxView extends Backbone.View
       when Database then nodes.database = node
       when Table    then nodes.table = node
       when Field    then nodes.field = node
-    nodes.table = nodes.field.parent if nodes.field
+    nodes.table    = nodes.field.parent    if nodes.field
+    nodes.database = nodes.table.parent    if nodes.table
+    nodes.server   = nodes.database.parent if nodes.database
     
     @sections = {}
     @sections[k] = new Sections[k] @, node for k, node of nodes
@@ -39,5 +41,5 @@ module.exports = class ToolboxView extends Backbone.View
   ###
   render: ->
     @el.html ''
-    for k in ['server', 'database', 'table', 'field']
-      @el.append @sections[k].render() if @sections[k]
+    for k in ['field', 'table', 'database', 'server']
+      @el.append @sections[k].render().fadeTo(0, 0).fadeTo(250, 1) if @sections[k]
