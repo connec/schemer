@@ -218,13 +218,6 @@ body {
 #server #graph .wrapper .node {
   display: block;
   position: absolute;
-/*&.in-path
-          .edge
-            color #cc6
-          
-          .label
-            background-image linear-gradient(top, #ff9, #cc6)
-            border-color     #cc6*/
 }
 #server #graph .wrapper .node .edge {
   position: absolute;
@@ -276,6 +269,13 @@ body {
   height: 30px;
   background-image: url("../images/pk-overlay.png");
 }
+#server #graph .wrapper .node.changed .label {
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #f99), color-stop(1, #c66)) !important;
+  background-image: -webkit-linear-gradient(top, #f99 0%, #c66 100%) !important;
+  background-image: -moz-linear-gradient(top, #f99 0%, #c66 100%) !important;
+  background-image: linear-gradient(top, #f99 0%, #c66 100%) !important;
+  border-color: #c66 !important;
+}
 #toolbox {
   position: fixed;
   left: 0;
@@ -296,32 +296,69 @@ body {
   background-image: -webkit-linear-gradient(top, #eee 0%, #bbb 100%);
   background-image: -moz-linear-gradient(top, #eee 0%, #bbb 100%);
   background-image: linear-gradient(top, #eee 0%, #bbb 100%);
-  -webkit-box-shadow: 0 1px 5px #000;
-  -moz-box-shadow: 0 1px 5px #000;
-  box-shadow: 0 1px 5px #000;
+  border-top: 1px solid #ccc;
+  border-bottom: 2px solid #999;
   font-size: 1.2em;
+}
+#toolbox section h1 h1:first-child {
+  border-top: 0;
+}
+#toolbox section ul {
+  margin-left: 10px;
 }
 #toolbox section a {
   cursor: pointer;
-  margin-left: 12px;
+  padding-left: 17px;
+  background-position: left center;
+  background-repeat: no-repeat;
 }
-#toolbox section a:before {
-  display: inline-block;
-  position: relative;
-  top: 1px;
-  width: 12px;
-  height: 12px;
-  margin-right: 5px;
-  content: ' ';
-}
-#toolbox section a.add:before {
+#toolbox section a.add {
   background-image: url("../images/add-icon.png");
 }
-#toolbox section a.drop:before {
+#toolbox section a.drop {
   background-image: url("../images/drop-icon.png");
 }
-#toolbox section a.rename:before {
+#toolbox section a.rename {
   background-image: url("../images/rename-icon.png");
+}
+#toolbox section h2 {
+  margin: 5px;
+  padding: 3px;
+  border-bottom: 1px solid #ccc;
+}
+#toolbox section ul.properties li {
+  padding-left: 17px;
+  background-position: left center;
+  background-repeat: no-repeat;
+}
+#toolbox section ul.properties li.ai {
+  background-image: url("../images/ai-icon.png");
+}
+#toolbox section ul.properties li.default {
+  background-image: url("../images/default-icon.png");
+}
+#toolbox section ul.properties li.key {
+  background-image: url("../images/key-icon.png");
+}
+#toolbox section ul.properties li.save {
+  background-image: url("../images/save-icon.png");
+}
+#toolbox section ul.properties li.type {
+  background-image: url("../images/type-icon.png");
+}
+#toolbox section ul.properties li > * {
+  width: 210px;
+  font: 10pt 'Lucida Sans Unicode', 'Lucida Sans', Lucida, sans-serif;
+}
+#toolbox section ul.properties li > *.default {
+  width: 190px;
+}
+#toolbox section ul.properties li > *.default_toggle {
+  width: 20px;
+}
+#toolbox section ul.properties li > *.save {
+  width: 100px;
+  margin-left: 55px;
 }
 @-moz-keyframes rotate_clockwise {
   0% {

@@ -131,27 +131,31 @@
                     Children.__super__.constructor.call(this);
                     this.model = this.parent.constructor.Child;
                     this.bind("add", this.on_add.bind(this));
-                    this.bind("reset", this.on_reset.bind(this));
+                    this.bind("remove", this.on_remove.bind(this));
                 }
                 Children.prototype.comparator = function(model) {
                     return model.get("name");
+                };
+                Children.prototype.add = function(models) {
+                    var _this = this;
+                    if (Array.isArray(models)) {
+                        models = models.filter(function(model) {
+                            return !(model.id in _this._byId);
+                        });
+                    } else {
+                        if (models.id in this._byId) return;
+                    }
+                    return Children.__super__.add.apply(this, arguments);
                 };
                 Children.prototype.on_add = function(model, collection, options) {
                     var _ref;
                     model.parent = this.parent;
                     return this.parent.tree.insert_node(model, this.parent, (_ref = options.index) != null ? _ref : this.indexOf(model));
                 };
-                Children.prototype.on_reset = function() {
-                    var skip, _this = this;
-                    skip = this.parent.children.map(function(child) {
-                        return child.id;
-                    });
-                    return this.each(function(model, index) {
-                        var _ref;
-                        if (_ref = model.id, __indexOf.call(skip, _ref) >= 0) return;
-                        model.parent = _this.parent;
-                        return _this.parent.tree.insert_node(model, _this.parent, index);
-                    });
+                Children.prototype.on_remove = function(model) {
+                    if (__indexOf.call(this.parent.children, model) >= 0) {
+                        return this.parent.tree.remove_node(model);
+                    }
                 };
                 return Children;
             }(Backbone.Collection);
@@ -304,7 +308,7 @@
                     this.toolbox = toolbox;
                     this.node = node;
                     this.el = $(this.template({
-                        name: this.node.get("name")
+                        node: this.node
                     }));
                     Section.__super__.constructor.call(this);
                 }
@@ -328,24 +332,24 @@
                                 });
                             },
                             error: function(_, err) {
-                                return console.log(err.stack);
+                                return on_error(err);
                             }
                         });
                     });
                 };
                 Section.prototype.drop = function() {
-                    var _this = this;
+                    var drop, parent, _this = this;
+                    parent = this.node.parent;
+                    drop = function() {
+                        return _this.toolbox.graph.node_click(parent);
+                    };
+                    if (!this.node.id) return drop();
                     return this.toolbox.graph.transition(function(done) {
                         return _this.node.destroy({
                             complete: done,
-                            success: function() {
-                                var parent;
-                                parent = _this.node.parent;
-                                _this.node.tree.remove_node(_this.node);
-                                return _this.toolbox.graph.node_click(parent);
-                            },
+                            success: drop,
                             error: function(_, err) {
-                                return console.log(err.stack);
+                                return on_error(err);
                             }
                         });
                     });
@@ -361,41 +365,49 @@
                             name: new_name
                         });
                         if (old_name === new_name) return;
-                        return _this.toolbox.graph.transition(function(done) {
-                            var child, _i, _len, _ref;
-                            _ref = _this.node.children;
-                            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                                child = _ref[_i];
-                                _this.node.tree.remove_node(child);
-                            }
-                            _this.node.tree.animate();
-                            return _this.node.tree.bind_once("anim:after", function() {
-                                return _this.node.save({}, {
-                                    success: function(model) {
-                                        return model.get("children").fetch({
-                                            complete: done,
-                                            success: function() {
-                                                _this.$("h1").text(model.get("name"));
-                                                return _this.node.tree.animate();
-                                            },
-                                            error: function(_, err) {
-                                                return console.log(err.stack);
-                                            }
-                                        });
-                                    },
-                                    error: function(_, err) {
-                                        done();
-                                        return console.log(err.stack);
-                                    }
-                                });
-                            });
-                        });
+                        if (_this.node.id) return _this.update();
                     };
                     this.node.$label.html("");
                     return $input = $("<input/>").attr({
                         type: "text",
                         value: this.node.get("name")
                     }).appendTo(this.node.$label).focus().select().bind("blur", rename).bind("keypress", rename);
+                };
+                Section.prototype.update = function() {
+                    var _this = this;
+                    return this.toolbox.graph.transition(function(done) {
+                        var child, children, _i, _len, _ref;
+                        children = _this.node.get("children");
+                        _ref = _this.node.children;
+                        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                            child = _ref[_i];
+                            children.remove(child);
+                        }
+                        _this.node.tree.animate();
+                        return _this.node.tree.bind_once("anim:after", function() {
+                            return _this.node.save({}, {
+                                success: function(model) {
+                                    _this.node.$elem.removeClass("changed");
+                                    _this.$("h1").text(model.get("name"));
+                                    if (!model.get("children")) return done();
+                                    return model.get("children").fetch({
+                                        add: true,
+                                        complete: done,
+                                        success: function() {
+                                            return _this.node.tree.animate();
+                                        },
+                                        error: function(_, err) {
+                                            return on_error(err);
+                                        }
+                                    });
+                                },
+                                error: function(_, err) {
+                                    done();
+                                    return on_error(err);
+                                }
+                            });
+                        });
+                    });
                 };
                 return Section;
             }(Backbone.View);
@@ -492,7 +504,7 @@
                         lineno: 2,
                         filename: __jade[0].filename
                     });
-                    buf.push("<h1>" + escape((interp = name) == null ? "" : interp) + "");
+                    buf.push("<h1>" + escape((interp = node.get("name")) == null ? "" : interp) + "");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -524,9 +536,9 @@
                     });
                     buf.push("<a");
                     buf.push(attrs({
-                        "class": "rename"
+                        "class": "add"
                     }));
-                    buf.push(">Rename");
+                    buf.push(">Add Table");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -580,9 +592,9 @@
                     });
                     buf.push("<a");
                     buf.push(attrs({
-                        "class": "add"
+                        "class": "rename"
                     }));
-                    buf.push(">Add Table");
+                    buf.push(">Rename");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -674,7 +686,7 @@
                         lineno: 2,
                         filename: __jade[0].filename
                     });
-                    buf.push("<h1>" + escape((interp = name) == null ? "" : interp) + "");
+                    buf.push("<h1>" + escape((interp = node.get("name")) == null ? "" : interp) + "");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -706,34 +718,6 @@
                     });
                     buf.push("<a");
                     buf.push(attrs({
-                        "class": "rename"
-                    }));
-                    buf.push(">Rename");
-                    __jade.unshift({
-                        lineno: undefined,
-                        filename: __jade[0].filename
-                    });
-                    __jade.shift();
-                    buf.push("</a>");
-                    __jade.shift();
-                    __jade.shift();
-                    buf.push("</li>");
-                    __jade.shift();
-                    __jade.unshift({
-                        lineno: 7,
-                        filename: __jade[0].filename
-                    });
-                    buf.push("<li>");
-                    __jade.unshift({
-                        lineno: undefined,
-                        filename: __jade[0].filename
-                    });
-                    __jade.unshift({
-                        lineno: 7,
-                        filename: __jade[0].filename
-                    });
-                    buf.push("<a");
-                    buf.push(attrs({
                         "class": "drop"
                     }));
                     buf.push(">Drop");
@@ -748,7 +732,7 @@
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 9,
+                        lineno: 7,
                         filename: __jade[0].filename
                     });
                     buf.push("<li>");
@@ -757,104 +741,398 @@
                         filename: __jade[0].filename
                     });
                     __jade.unshift({
-                        lineno: 9,
+                        lineno: 7,
                         filename: __jade[0].filename
                     });
                     buf.push("<a");
+                    buf.push(attrs({
+                        "class": "rename"
+                    }));
+                    buf.push(">Rename");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</a>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</ul>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 8,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<h2>Properties");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</h2>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 9,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<ul");
+                    buf.push(attrs({
+                        "class": "properties"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 10,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li");
                     buf.push(attrs({
                         "class": "type"
                     }));
-                    buf.push(">Set Type");
+                    buf.push(">");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
                     });
+                    __jade.unshift({
+                        lineno: 11,
+                        filename: __jade[0].filename
+                    });
+                    var types = {};
                     __jade.shift();
-                    buf.push("</a>");
+                    __jade.unshift({
+                        lineno: 12,
+                        filename: __jade[0].filename
+                    });
+                    types.Boolean = [ "tinyint", 1 ];
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 13,
+                        filename: __jade[0].filename
+                    });
+                    types.Date = [ "date" ];
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 14,
+                        filename: __jade[0].filename
+                    });
+                    types.DateTime = [ "datetime" ];
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 15,
+                        filename: __jade[0].filename
+                    });
+                    types.Float = [ "float" ];
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 16,
+                        filename: __jade[0].filename
+                    });
+                    types.Integer = [ "int", 11 ];
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 17,
+                        filename: __jade[0].filename
+                    });
+                    types.String = [ "varchar", 256 ];
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 18,
+                        filename: __jade[0].filename
+                    });
+                    types.Text = [ "text" ];
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 19,
+                        filename: __jade[0].filename
+                    });
+                    types.Time = [ "time" ];
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 20,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<select");
+                    buf.push(attrs({
+                        "class": "type"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 21,
+                        filename: __jade[0].filename
+                    });
+                    ((function() {
+                        if ("number" == typeof types.length) {
+                            for (var type = 0, $$l = types.length; type < $$l; type++) {
+                                var def = types[type];
+                                __jade.unshift({
+                                    lineno: 21,
+                                    filename: __jade[0].filename
+                                });
+                                __jade.unshift({
+                                    lineno: 22,
+                                    filename: __jade[0].filename
+                                });
+                                buf.push("<option");
+                                buf.push(attrs({
+                                    "data-type": def[0],
+                                    "data-length": def[1],
+                                    selected: node.get("type") == def[0]
+                                }));
+                                buf.push(">");
+                                var __val__ = type;
+                                buf.push(escape(null == __val__ ? "" : __val__));
+                                __jade.unshift({
+                                    lineno: undefined,
+                                    filename: __jade[0].filename
+                                });
+                                __jade.shift();
+                                buf.push("</option>");
+                                __jade.shift();
+                                __jade.shift();
+                            }
+                        } else {
+                            for (var type in types) {
+                                var def = types[type];
+                                __jade.unshift({
+                                    lineno: 21,
+                                    filename: __jade[0].filename
+                                });
+                                __jade.unshift({
+                                    lineno: 22,
+                                    filename: __jade[0].filename
+                                });
+                                buf.push("<option");
+                                buf.push(attrs({
+                                    "data-type": def[0],
+                                    "data-length": def[1],
+                                    selected: node.get("type") == def[0]
+                                }));
+                                buf.push(">");
+                                var __val__ = type;
+                                buf.push(escape(null == __val__ ? "" : __val__));
+                                __jade.unshift({
+                                    lineno: undefined,
+                                    filename: __jade[0].filename
+                                });
+                                __jade.shift();
+                                buf.push("</option>");
+                                __jade.shift();
+                                __jade.shift();
+                            }
+                        }
+                    })).call(this);
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</select>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 32,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<script type=\"text/javascript\">\n(function() {\n  var option;\n\n  if (!$('select.type option[selected]').length) {\n    option = $('<option/>').attr({\n      selected: true,\n      'data-type': '" + escape((interp = node.get("type")) == null ? "" : interp) + "',\n      'data-length': '" + escape((interp = node.get("length")) == null ? "" : interp) + "'\n    }).text('" + escape((interp = node.get("type")) == null ? "" : interp) + "').appendTo($('select.type'));\n    if (option.attr('data-length')) option.append('(" + escape((interp = node.get("length")) == null ? "" : interp) + ")');\n  }\n\n}).call(this);\n</script>");
                     __jade.shift();
                     __jade.shift();
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 11,
+                        lineno: 32,
                         filename: __jade[0].filename
                     });
-                    buf.push("<li>");
-                    __jade.unshift({
-                        lineno: undefined,
-                        filename: __jade[0].filename
-                    });
-                    __jade.unshift({
-                        lineno: 11,
-                        filename: __jade[0].filename
-                    });
-                    buf.push("<a");
+                    buf.push("<li");
                     buf.push(attrs({
                         "class": "default"
                     }));
-                    buf.push(">Set Default");
+                    buf.push(">");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
                     });
+                    __jade.unshift({
+                        lineno: 33,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<input");
+                    buf.push(attrs({
+                        type: "text",
+                        value: node.get("default"),
+                        disabled: node.get("default") === null,
+                        "class": "default"
+                    }));
+                    buf.push("/>");
                     __jade.shift();
-                    buf.push("</a>");
+                    __jade.unshift({
+                        lineno: 34,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<input");
+                    buf.push(attrs({
+                        type: "checkbox",
+                        checked: node.get("default") !== null,
+                        "class": "default_toggle"
+                    }));
+                    buf.push("/>");
                     __jade.shift();
                     __jade.shift();
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 13,
+                        lineno: 35,
                         filename: __jade[0].filename
                     });
-                    buf.push("<li>");
-                    __jade.unshift({
-                        lineno: undefined,
-                        filename: __jade[0].filename
-                    });
-                    __jade.unshift({
-                        lineno: 13,
-                        filename: __jade[0].filename
-                    });
-                    buf.push("<a");
+                    buf.push("<li");
                     buf.push(attrs({
                         "class": "key"
                     }));
-                    buf.push(">Add key");
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 36,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<select");
+                    buf.push(attrs({
+                        "class": "key"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 37,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<option>None");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
                     });
                     __jade.shift();
-                    buf.push("</a>");
+                    buf.push("</option>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 38,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<option");
+                    buf.push(attrs({
+                        value: "index",
+                        selected: node.get("key") == "index"
+                    }));
+                    buf.push(">Index");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</option>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 39,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<option");
+                    buf.push(attrs({
+                        value: "primary",
+                        selected: node.get("key") == "primary"
+                    }));
+                    buf.push(">Primary");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</option>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 40,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<option");
+                    buf.push(attrs({
+                        value: "unique",
+                        selected: node.get("key") == "unique"
+                    }));
+                    buf.push(">Unique");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</option>");
+                    __jade.shift();
+                    __jade.shift();
+                    buf.push("</select>");
                     __jade.shift();
                     __jade.shift();
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 15,
+                        lineno: 41,
                         filename: __jade[0].filename
                     });
-                    buf.push("<li>");
-                    __jade.unshift({
-                        lineno: undefined,
-                        filename: __jade[0].filename
-                    });
-                    __jade.unshift({
-                        lineno: 15,
-                        filename: __jade[0].filename
-                    });
-                    buf.push("<a");
+                    buf.push("<li");
                     buf.push(attrs({
                         "class": "ai"
                     }));
-                    buf.push(">Auto-increment");
+                    buf.push(">");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
                     });
+                    __jade.unshift({
+                        lineno: 42,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<input");
+                    buf.push(attrs({
+                        type: "checkbox",
+                        checked: node.get("ai"),
+                        "class": "ai"
+                    }));
+                    buf.push("/>");
                     __jade.shift();
-                    buf.push("</a>");
+                    __jade.shift();
+                    buf.push("</li>");
+                    __jade.shift();
+                    __jade.unshift({
+                        lineno: 43,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<li");
+                    buf.push(attrs({
+                        "class": "save"
+                    }));
+                    buf.push(">");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.unshift({
+                        lineno: 44,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<input");
+                    buf.push(attrs({
+                        type: "button",
+                        value: "Save",
+                        "class": "save"
+                    }));
+                    buf.push("/>");
                     __jade.shift();
                     __jade.shift();
                     buf.push("</li>");
@@ -896,6 +1174,60 @@
                     FieldSection.__super__.constructor.apply(this, arguments);
                 }
                 FieldSection.prototype.template = require("../../../templates/toolbox/field");
+                FieldSection.prototype.events = {
+                    "change select.type": "change",
+                    "change input.default": "change",
+                    "change select.key": "change",
+                    "change input.ai": "change",
+                    "change input.default_toggle": "toggle_default",
+                    "click input.save": "update",
+                    "click .drop": "drop",
+                    "click .rename": "rename"
+                };
+                FieldSection.prototype.change = function(e) {
+                    var $elem, $selected, on_change, _this = this;
+                    on_change = function() {
+                        return _this.node.$elem.addClass("changed");
+                    };
+                    this.node.bind("change", on_change);
+                    $elem = $(e.target);
+                    $selected = $elem.find(":selected");
+                    if ($elem.hasClass("type")) {
+                        this.node.set({
+                            type: $selected.attr("data-type"),
+                            length: $selected.attr("data-length")
+                        });
+                    } else if ($elem.hasClass("default")) {
+                        this.node.set({
+                            "default": $elem.is(":disabled") ? null : $elem.val()
+                        });
+                    } else if ($elem.hasClass("key")) {
+                        this.node.set({
+                            key: $elem.val()
+                        });
+                    } else if ($elem.hasClass("ai")) {
+                        this.node.set({
+                            ai: $elem.is(":checked")
+                        });
+                    } else {
+                        console.log("bad element");
+                    }
+                    return this.node.unbind("change", on_change);
+                };
+                FieldSection.prototype.toggle_default = function(e) {
+                    if ($(e.target).is(":checked")) {
+                        this.node.$elem.addClass("changed");
+                        return this.$("input.default").removeAttr("disabled").focus();
+                    } else {
+                        this.node.set({
+                            "default": null
+                        });
+                        this.node.$elem.addClass("changed");
+                        return this.$("input.default").val("").attr({
+                            disabled: "disabled"
+                        });
+                    }
+                };
                 return FieldSection;
             }(Section);
         })).call(this);
@@ -935,7 +1267,7 @@
                         lineno: 2,
                         filename: __jade[0].filename
                     });
-                    buf.push("<h1>" + escape((interp = name) == null ? "" : interp) + "");
+                    buf.push("<h1>" + escape((interp = node.get("name")) == null ? "" : interp) + "");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -1059,7 +1391,7 @@
                         lineno: 2,
                         filename: __jade[0].filename
                     });
-                    buf.push("<h1>" + escape((interp = name) == null ? "" : interp) + "");
+                    buf.push("<h1>" + escape((interp = node.get("name")) == null ? "" : interp) + "");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -1091,9 +1423,9 @@
                     });
                     buf.push("<a");
                     buf.push(attrs({
-                        "class": "rename"
+                        "class": "add"
                     }));
-                    buf.push(">Rename");
+                    buf.push(">Add Field");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -1147,9 +1479,9 @@
                     });
                     buf.push("<a");
                     buf.push(attrs({
-                        "class": "add"
+                        "class": "rename"
                     }));
-                    buf.push(">Add Field");
+                    buf.push(">Rename");
                     __jade.unshift({
                         lineno: undefined,
                         filename: __jade[0].filename
@@ -1178,7 +1510,7 @@
         "views\\server\\toolbox": [ "./table" ]
     }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var Section, TableSection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Field, Section, TableSection, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1190,6 +1522,7 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
+            Field = require("../../../models/field");
             Section = require("./section");
             module.exports = TableSection = function(_super) {
                 __extends(TableSection, _super);
@@ -1203,26 +1536,30 @@
                     "click .rename": "rename"
                 };
                 TableSection.prototype.add_child = function() {
-                    var child, i, match, model, node, tree, _i, _len, _ref, _this = this;
+                    var child, i, match, _i, _len, _ref, _this = this;
                     i = 0;
                     _ref = this.node.children;
                     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                        model = _ref[_i].model;
-                        if ((match = model.get("name").match(/new field \((\d+)\)/i)) && parseInt(match[1]) > i) {
+                        child = _ref[_i];
+                        if ((match = child.get("name").match(/new field \((\d+)\)/i)) && parseInt(match[1]) > i) {
                             i = match[1];
                         }
                     }
                     child = new Field({
-                        name: "new field (" + ++i + ")"
+                        name: "new field (" + ++i + ")",
+                        type: "int",
+                        length: 11,
+                        "null": false,
+                        "default": null,
+                        ai: false,
+                        key: false
                     });
-                    node = new Tree.Node(child.get("name"));
-                    node.model = child;
-                    this.node.model.children().add(child);
-                    tree = this.toolbox.graph.tree;
-                    tree.insert_node(node, this.node);
-                    tree.animate();
-                    return tree.bind_once("anim:after", function() {
-                        return _this.toolbox.graph.node_click(node);
+                    child.parent = this.node;
+                    child.$elem.addClass("changed");
+                    this.node.get("children").add(child);
+                    this.node.tree.animate();
+                    return this.node.tree.bind_once("anim:after", function() {
+                        return _this.toolbox.graph.node_click(child);
                     });
                 };
                 return TableSection;
@@ -1335,7 +1672,7 @@
                     this.tree = global.tree = new Tree(this.el);
                     this.tree.bind("node:click", this.node_click.bind(this));
                     return socket.request("get_server", function(err, server) {
-                        if (err) console.log(err.stack);
+                        if (err) return on_error(err);
                         _this.tree.set_root(new Server(server));
                         _this.tree.set_centre(_this.tree.root);
                         _this.tree.refresh();
@@ -1343,7 +1680,7 @@
                     });
                 };
                 GraphView.prototype.node_click = function(node) {
-                    var child, direction, grandchild, ids, path, sibling, _i, _j, _len, _len2, _ref, _ref2, _this = this;
+                    var child, direction, grandchild, grandchildren, i, ids, path, sibling, siblings, _i, _j, _len, _len2, _ref, _ref2, _ref3, _this = this;
                     if (node.$elem.hasClass("selected")) return;
                     if (parseInt(node.$elem.attr("data-depth")) < parseInt(this.$(".selected").attr("data-depth"))) {
                         direction = "up";
@@ -1359,29 +1696,31 @@
                     }
                     this.tree.unbind("node:click", this.node_click);
                     if (direction === "down") {
+                        siblings = (_ref2 = node.parent) != null ? _ref2.get("children") : void 0;
                         if (!(node instanceof Field)) {
-                            _ref2 = node.siblings();
-                            for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-                                sibling = _ref2[_j];
-                                this.tree.remove_node(sibling);
+                            _ref3 = node.siblings();
+                            for (_j = 0, _len2 = _ref3.length; _j < _len2; _j++) {
+                                sibling = _ref3[_j];
+                                siblings.remove(sibling);
                             }
                         }
                     } else {
                         ids = function() {
-                            var _k, _l, _len3, _len4, _ref3, _ref4, _results;
-                            _ref3 = node.children;
+                            var _k, _len3, _len4, _ref4, _ref5, _results;
+                            _ref4 = node.children;
                             _results = [];
-                            for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
-                                child = _ref3[_k];
-                                _ref4 = child.children.slice(0);
-                                for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
-                                    grandchild = _ref4[_l];
-                                    this.tree.remove_node(grandchild);
+                            for (_k = 0, _len3 = _ref4.length; _k < _len3; _k++) {
+                                child = _ref4[_k];
+                                grandchildren = child.get("children");
+                                _ref5 = child.children.slice(0);
+                                for (i = 0, _len4 = _ref5.length; i < _len4; i++) {
+                                    grandchild = _ref5[i];
+                                    grandchildren.remove(grandchild);
                                 }
                                 _results.push(child.id);
                             }
                             return _results;
-                        }.call(this);
+                        }();
                     }
                     this.tree.set_centre(node);
                     this.tree.animate();
@@ -1393,6 +1732,7 @@
                         }
                         return _this.transition(function(done) {
                             return node.get("children").fetch({
+                                add: true,
                                 complete: done,
                                 success: function() {
                                     _this.toolbox.update(node);
@@ -1402,7 +1742,7 @@
                                     });
                                 },
                                 error: function(_, err) {
-                                    return console.log(err.stack);
+                                    return on_error(err);
                                 }
                             });
                         });
@@ -1750,6 +2090,7 @@
                     };
                     return socket.request("login", credentials, function(err) {
                         if (err) {
+                            console.log(err.stack);
                             _this.$ring.animationPlayState("paused");
                             _this.$message.text(String(err)).css({
                                 top: -_this.$("#message").outerHeight()
@@ -1799,8 +2140,8 @@
             Backbone.sync = function(method, model, options) {
                 var callback;
                 callback = function(err, results) {
-                    if (typeof options.complete === "function") options.complete(err, results);
-                    if (err) return options.error(null, err);
+                    if (typeof options.complete === "function") options.complete(results, err);
+                    if (err) return options.error(err);
                     return options.success(results);
                 };
                 switch (method) {
@@ -1826,6 +2167,13 @@
                     return socket.request("add_table", {
                         database: model.parent.get("name")
                     }, callback);
+                  case Field:
+                    return socket.request("add_field", {
+                        database: model.parent.parent.get("name"),
+                        table: model.parent.get("name"),
+                        field: model.get("name"),
+                        attributes: model.attributes
+                    }, callback);
                   default:
                     return console.log("unhandled model create", model);
                 }
@@ -1840,6 +2188,12 @@
                     return socket.request("drop_table", {
                         database: model.parent.get("name"),
                         table: model.get("name")
+                    }, callback);
+                  case Field:
+                    return socket.request("drop_field", {
+                        database: model.parent.parent.get("name"),
+                        table: model.parent.get("name"),
+                        field: model.get("name")
                     }, callback);
                   default:
                     return console.log("unhandled model delete", model);
@@ -1875,6 +2229,13 @@
                         old_name: model.id.replace("" + model.parent.id + "/", ""),
                         new_name: model.get("name")
                     }, callback);
+                  case Field:
+                    return socket.request("alter_field", {
+                        database: model.parent.parent.get("name"),
+                        table: model.parent.get("name"),
+                        field: model.id.replace("" + model.parent.id + "/", ""),
+                        attributes: model.attributes
+                    }, callback);
                   default:
                     return console.log("unhandled model update", model);
                 }
@@ -1885,7 +2246,7 @@
         "": [ "app" ]
     }, "", function(global, module, exports, require, window) {
         ((function() {
-            var LoginView, Router, ServerView, socket_request, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var LoginView, Router, ServerView, on_error, socket_request, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1918,6 +2279,10 @@
                 });
                 return this.emit("request", data);
             };
+            on_error = function(err) {
+                console.log(err.stack);
+                return alert(String(err));
+            };
             Router = function(_super) {
                 __extends(Router, _super);
                 function Router() {
@@ -1930,7 +2295,7 @@
                 Router.prototype.home = function() {
                     var _this = this;
                     return socket.request("check_login", function(err, response) {
-                        if (err) return console.log(err.stack);
+                        if (err) return on_error(err);
                         if (!response) return _this.navigate("/login", true);
                         return (new ServerView(_this)).fade_in();
                     });
@@ -1942,6 +2307,7 @@
             }(Backbone.Router);
             jQuery(function() {
                 var router;
+                global.on_error = on_error;
                 global.socket = io.connect();
                 socket.request = socket_request.bind(global.socket);
                 router = new Router;

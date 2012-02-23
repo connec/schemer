@@ -33,13 +33,23 @@ class Children extends Backbone.Collection
     super()
     @model = @parent.constructor.Child
     @bind 'add', @on_add.bind @
-    @bind 'reset', @on_reset.bind @
+    @bind 'remove', @on_remove.bind @
   
   ###
   Gets the value by which to compare models in the collection.
   ###
   comparator: (model) ->
     model.get 'name'
+  
+  ###
+  Alter `add` to skip models if it is already in the collection.
+  ###
+  add: (models) ->
+    if Array.isArray models
+      models = models.filter (model) => model.id not of @_byId
+    else
+      return if models.id of @_byId
+    super
   
   ###
   Called when a model is added to the collection.
@@ -49,11 +59,7 @@ class Children extends Backbone.Collection
     @parent.tree.insert_node model, @parent, options.index ? @indexOf model
   
   ###
-  Called when the collection is reset.
+  Called when a model is removed from the collection.
   ###
-  on_reset: ->
-    skip = @parent.children.map (child) -> child.id
-    @each (model, index) =>
-      return if model.id in skip
-      model.parent = @parent
-      @parent.tree.insert_node model, @parent, index
+  on_remove: (model) ->
+    @parent.tree.remove_node model if model in @parent.children

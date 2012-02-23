@@ -4,7 +4,7 @@ module.exports = class Section extends Backbone.View
   Construct the view.
   ###
   constructor: (@toolbox, @node) ->
-    @el = $ @template name: @node.get 'name'
+    @el = $ @template {@node}
     super()
   
   ###
@@ -29,22 +29,21 @@ module.exports = class Section extends Backbone.View
           @node.tree.animate()
           @node.tree.bind_once 'anim:after', =>
             @toolbox.graph.node_click model
-        error: (_, err) ->
-          console.log err.stack
+        error: (_, err) -> on_error err
   
   ###
   Handles the dropping of this node.
   ###
   drop: ->
+    parent = @node.parent
+    drop   = => @toolbox.graph.node_click parent
+    return drop() unless @node.id
+    
     @toolbox.graph.transition (done) =>
       @node.destroy
         complete: done
-        success: =>
-          parent = @node.parent
-          @node.tree.remove_node @node
-          @toolbox.graph.node_click parent
-        error: (_, err) ->
-          return console.log err.stack
+        success:  drop
+        error:    (_, err) -> on_error err
   
   ###
   Handles the renaming of this node.
@@ -59,24 +58,7 @@ module.exports = class Section extends Backbone.View
       @node.set name: new_name
       return if old_name == new_name
       
-      @toolbox.graph.transition (done) =>
-        # Remove the children, as they need to be replaced with new IDs
-        @node.tree.remove_node child for child in @node.children
-        @node.tree.animate()
-        @node.tree.bind_once 'anim:after', =>
-          @node.save {},
-            success: (model) =>
-              # Re-add the children
-              model.get('children').fetch
-                complete: done
-                success: =>
-                  @$('h1').text model.get 'name'
-                  @node.tree.animate()
-                error: (_, err) ->
-                  console.log err.stack
-            error: (_, err) ->
-              done()
-              console.log err.stack
+      @update() if @node.id
     
     @node.$label.html ''
     $input = $('<input/>')
@@ -86,3 +68,29 @@ module.exports = class Section extends Backbone.View
       .select()
       .bind('blur', rename)
       .bind('keypress', rename)
+  
+  ###
+  Handles the updating of this node.
+  ###
+  update: ->
+    @toolbox.graph.transition (done) =>
+      # Remove the children, as they may need to be replaced with new IDs
+      children = @node.get 'children'
+      children.remove child for child in @node.children
+      @node.tree.animate()
+      @node.tree.bind_once 'anim:after', =>
+        @node.save {},
+          success: (model) =>
+            @node.$elem.removeClass 'changed'
+            @$('h1').text model.get 'name'
+            
+            # Re-add the children
+            return done() unless model.get 'children'
+            model.get('children').fetch
+              add: true
+              complete: done
+              success: => @node.tree.animate()
+              error: (_, err) -> on_error err
+          error: (_, err) ->
+            done()
+            on_error err

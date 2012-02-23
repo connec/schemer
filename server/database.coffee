@@ -7,6 +7,24 @@ The Database class provides helper methods for common database operations.
 module.exports = class Database
   
   ###
+  Private helper function to process field descriptions returned by the database
+  into a more userful format.
+  ###
+  process_field = (database, table, result) ->
+    id:      "#{@client.host}/#{database}/#{table}/#{result.Field}"
+    name:    result.Field
+    type:    result.Type.match(/(.*?)(\(|$)/)[1]
+    length:  result.Type.match(/\((.*)\)/)?[1]
+    null:    if result.Null is 'NO' then no else yes
+    default: result.Default
+    ai:      if result.Extra.match /auto_increment/ then yes else no
+    key:     switch result.Key
+      when 'PRI' then 'primary'
+      when 'UNI' then 'unique'
+      when 'MUL' then 'index'
+      else false
+  
+  ###
   Initialise a Database instance with given credentials.
   ###
   constructor: (credentials) ->
@@ -48,22 +66,16 @@ module.exports = class Database
   get_fields: (database, table, callback) ->
     @query "describe `#{database}`.`#{table}`", (err, results) =>
       return callback err if err
-      
-      # Fields need a bit of processing...
-      fields = results.map (result) =>
-        id:      "#{@client.host}/#{database}/#{table}/#{result.Field}"
-        name:    result.Field
-        type:    result.Type.match(/(.*?)(\(|$)/)[1]
-        length:  result.Type.match(/\((.*)\)/)?[1]
-        null:    if result.Null is 'NO' then no else yes
-        default: result.Default
-        ai:      if result.Extra.match /auto_increment/ then yes else no
-        key:     switch result.Key
-          when 'PRI' then 'primary'
-          when 'UNI' then 'unique'
-          when 'MUL' then 'index'
-          else false
-      callback null, fields
+      return callback null, results.map (result) =>
+        process_field.call @, database, table, result
+  
+  ###
+  Convenience method to get the details of a field in a table.
+  ###
+  get_field: (database, table, field, callback) ->
+    @query "describe `#{database}`.`#{table}` `#{field}`", (err, [result]) =>
+      return callback err if err
+      return callback null, process_field.call @, database, table, result
   
   ###
   Convenience method to create a database on the server with given name.
@@ -134,3 +146,39 @@ module.exports = class Database
   ###
   drop_table: (database, name, callback) ->
     @query "drop table `#{database}`.`#{name}`", callback
+  
+  ###
+  Convenience method to create a field.
+  ###
+  add_field: (database, table, field, attributes, callback) ->
+    query = "alter table `#{database}`.`#{table}` add column `#{field}` #{attributes.type}"
+    query += "(#{attributes.length})" if attributes.length?
+    query += " #{if not attributes.null then 'not ' else ''}null"
+    query += " default ?" if attributes.default?
+    query += ' auto_increment' if attributes.ai
+    @query query, (if attributes.default? then [attributes.default] else []), (err) =>
+      return callback err if err
+      return @get_field database, table, field, (err, field) ->
+        return callback err if err
+        return callback null, field
+  
+  ###
+  Convenience method to alter a field.
+  ###
+  alter_field: (database, table, field, attributes, callback) ->
+    query = "alter table `#{database}`.`#{table}` change `#{field}` `#{attributes.name}` #{attributes.type}"
+    query += "(#{attributes.length})" if attributes.length?
+    query += " #{if not attributes.null then 'not ' else ''}null"
+    query += " default ?" if attributes.default?
+    query += ' auto_increment' if attributes.ai
+    @query query, (if attributes.default? then [attributes.default] else []), (err) =>
+      return callback err if err
+      return @get_field database, table, attributes.name, (err, field) ->
+        return callback err if err
+        return callback null, field
+  
+  ###
+  Convenience method to drop a field with the given name.
+  ###
+  drop_field: (database, table, field, callback) ->
+    @query "alter table `#{database}`.`#{table}` drop column `#{field}`", callback

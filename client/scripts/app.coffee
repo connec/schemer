@@ -26,6 +26,13 @@ socket_request = (request, request_data, callback = request_data) ->
   @emit 'request', data
 
 ###
+The `on_error` function provides uniform error handling.
+###
+on_error = (err) ->
+  console.log err.stack
+  alert String err
+
+###
 The Router class deals with mapping hash fragments to actions.
 ###
 class Router extends Backbone.Router
@@ -43,7 +50,7 @@ class Router extends Backbone.Router
   ###
   home: ->
     socket.request 'check_login', (err, response) =>
-      return console.log err.stack if err
+      return on_error err if err
       return @navigate '/login', true unless response
       
       new ServerView(@).fade_in()
@@ -59,7 +66,8 @@ Kick everything off once the DOM has loaded.
 ###
 jQuery ->
   # Initialise key global objects
-  global.socket = io.connect()
+  global.on_error = on_error
+  global.socket   = io.connect()
   
   # Attach the socket_request method to the socket object
   socket.request = socket_request.bind global.socket

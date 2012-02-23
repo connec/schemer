@@ -10,30 +10,70 @@
     margin-bottom 25px
     
     h1
-      margin-bottom 10px
-      padding       5px
+      margin-bottom    10px
+      padding          5px
       background-image linear-gradient(top, #eee, #bbb)
-      box-shadow       0 1px 5px #000
+      border-top       1px solid #ccc
+      border-bottom    2px solid #999
       font-size        1.2em
+      
+      h1:first-child
+        border-top 0
+    
+    ul
+      margin-left 10px
     
     a
-      cursor pointer
-      margin-left 12px
+      cursor              pointer
+      padding-left        17px
+      background-position left center
+      background-repeat   no-repeat
       
-      &:before
-        display          inline-block
-        position         relative
-        top              1px
-        width            12px
-        height           12px
-        margin-right     5px
-        content          ' '
-      
-      &.add:before
+      &.add
         background-image url('../images/add-icon.png')
       
-      &.drop:before
+      &.drop
         background-image url('../images/drop-icon.png')
       
-      &.rename:before
+      &.rename
         background-image url('../images/rename-icon.png')
+    
+    h2
+      margin        5px
+      padding       3px
+      border-bottom 1px solid #ccc
+    
+    ul.properties
+      li
+        padding-left        17px
+        background-position left center
+        background-repeat   no-repeat
+        
+        &.ai
+          background-image url('../images/ai-icon.png')
+        
+        &.default
+          background-image url('../images/default-icon.png')
+        
+        &.key
+          background-image url('../images/key-icon.png')
+        
+        &.save
+          background-image url('../images/save-icon.png')
+        
+        &.type
+          background-image url('../images/type-icon.png')
+        
+        > *
+          width 210px
+          font()
+          
+          &.default
+            width 190px
+            
+          &.default_toggle
+            width 20px
+          
+          &.save
+            width       100px
+            margin-left 55px

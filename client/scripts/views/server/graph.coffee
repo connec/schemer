@@ -22,7 +22,7 @@ module.exports = class GraphView extends Backbone.View
     # Load the server details
     
     socket.request 'get_server', (err, server) =>
-      console.log err.stack if err
+      return on_error err if err
       
       # Prepare the root of the tree
       @tree.set_root new Server server
@@ -56,11 +56,13 @@ module.exports = class GraphView extends Backbone.View
     # Execute the methods for the direction we're moving in
     if direction is 'down'
       # Remove all siblings and centre the view on the node
-      @tree.remove_node sibling for sibling in node.siblings() unless node instanceof Field
+      siblings = node.parent?.get 'children'
+      siblings.remove sibling for sibling in node.siblings() unless node instanceof Field
     else
       # Remove all grand-children
       ids = for child in node.children
-        @tree.remove_node grandchild for grandchild in child.children[0..]
+        grandchildren = child.get 'children'
+        grandchildren.remove grandchild for grandchild, i in child.children[0..]
         child.id
     
     @tree.set_centre node
@@ -75,13 +77,14 @@ module.exports = class GraphView extends Backbone.View
         return
       @transition (done) =>
         node.get('children').fetch
+          add: true
           complete: done
           success: =>
             @toolbox.update node
             @tree.animate()
             @tree.bind_once 'anim:after', => @tree.bind 'node:click', @node_click.bind @
           error: (_, err) =>
-            console.log err.stack
+            on_error err
   
   ###
   Handles the dimming of the screen during a transition.

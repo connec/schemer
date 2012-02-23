@@ -1,15 +1,44 @@
 section.field
-  h1 #{name}
+  h1 #{node.get('name')}
   ul
-    li
-      a.rename Rename
     li
       a.drop Drop
     li
-      a.type Set Type
-    li
-      a.default Set Default
-    li
-      a.key Add key
-    li
-      a.ai Auto-increment
+      a.rename Rename
+  h2 Properties
+  ul.properties
+    li.type
+      - var types      = {}
+      - types.Boolean  = ['tinyint', 1]
+      - types.Date     = ['date']
+      - types.DateTime = ['datetime']
+      - types.Float    = ['float']
+      - types.Integer  = ['int', 11]
+      - types.String   = ['varchar', 256]
+      - types.Text     = ['text']
+      - types.Time     = ['time']
+      select.type
+        each def, type in types
+          option(data-type=def[0], data-length=def[1], selected=node.get('type') == def[0])= type
+      :coffeescript
+        # A nescessary evil to allow the creation of an option for types not
+        # defined above
+        unless $('select.type option[selected]').length
+          option = $('<option/>')
+            .attr(selected: true, 'data-type': '#{node.get("type")}', 'data-length': '#{node.get("length")}')
+            .text('#{node.get("type")}')
+            .appendTo $('select.type')
+          option.append '(#{node.get("length")})' if option.attr 'data-length'
+    li.default
+      input.default(type='text', value=node.get('default'), disabled=node.get('default') === null)
+      input.default_toggle(type='checkbox', checked=node.get('default') !== null)
+    li.key
+      select.key
+        option None
+        option(value='index', selected=node.get('key') == 'index') Index
+        option(value='primary', selected=node.get('key') == 'primary') Primary
+        option(value='unique', selected=node.get('key') == 'unique') Unique
+    li.ai
+      input.ai(type='checkbox', checked=node.get('ai'))
+    li.save
+      input.save(type='button', value='Save')

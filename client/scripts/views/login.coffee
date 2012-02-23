@@ -39,6 +39,7 @@ module.exports = class LoginView extends BaseView
     socket.request 'login', credentials, (err) =>
       if err
         # If there's an error, stop the animation and display it
+        console.log err.stack
         @$ring.animationPlayState 'paused'
         @$message.text(String err).css top: -@$('#message').outerHeight()
         @$('input').removeAttr 'disabled'

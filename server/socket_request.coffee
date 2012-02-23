@@ -151,3 +151,21 @@ module.exports = class SocketRequest
   ###
   drop_table: ({database, table}) ->
     @database.drop_table database, table, @respond.bind @
+  
+  ###
+  Creates a new field with given attributes.
+  ###
+  add_field: ({database, table, field, attributes}) ->
+    @database.add_field database, table, field, attributes, @respond.bind @
+  
+  ###
+  Updates the given field.
+  ###
+  alter_field: ({database, table, field, attributes}) ->
+    @database.alter_field database, table, field, attributes, @respond.bind @
+  
+  ###
+  Drops the given field.
+  ###
+  drop_field: ({database, table, field}) ->
+    @database.drop_field database, table, field, @respond.bind @

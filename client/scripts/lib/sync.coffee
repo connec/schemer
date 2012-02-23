@@ -8,8 +8,8 @@ Overwrite Backbone.sync to use WebSockets instead of AJAX.
 
 Backbone.sync = (method, model, options) ->
   callback = (err, results) ->
-    options.complete? err, results
-    return options.error null, err if err
+    options.complete? results, err
+    return options.error err if err
     return options.success results
   
   switch method
@@ -37,6 +37,13 @@ create_model = (model, callback) ->
       socket.request 'add_table',
         database: model.parent.get 'name'
       , callback
+    when Field
+      socket.request 'add_field',
+        database:   model.parent.parent.get 'name'
+        table:      model.parent.get 'name'
+        field:      model.get 'name'
+        attributes: model.attributes
+      , callback
     else
       console.log 'unhandled model create', model
 
@@ -53,6 +60,12 @@ delete_model = (model, callback) ->
       socket.request 'drop_table',
         database: model.parent.get 'name'
         table:    model.get 'name'
+      , callback
+    when Field
+      socket.request 'drop_field',
+        database: model.parent.parent.get 'name'
+        table:    model.parent.get 'name'
+        field:    model.get 'name'
       , callback
     else
       console.log 'unhandled model delete', model
@@ -91,6 +104,13 @@ update_model = (model, callback) ->
         database: model.parent.get 'name'
         old_name: model.id.replace "#{model.parent.id}/", ''
         new_name: model.get 'name'
+      , callback
+    when Field
+      socket.request 'alter_field',
+        database:   model.parent.parent.get 'name'
+        table:      model.parent.get 'name'
+        field:      model.id.replace "#{model.parent.id}/", ''
+        attributes: model.attributes
       , callback
     else
       console.log 'unhandled model update', model
