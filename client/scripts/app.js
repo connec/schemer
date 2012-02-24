@@ -43,7 +43,7 @@
         return console.log(String(new Error("Could not find module `" + file + "` from `" + from + "`")));
     };
     register({
-        views: [ "../base" ],
+        views: [ "./base" ],
         "views\\server": [ "../base" ]
     }, "views", function(global, module, exports, require, window) {
         ((function() {
@@ -1930,7 +1930,7 @@
         };
     });
     register({
-        views: [ "../server" ],
+        views: [ "./server" ],
         "": [ "./views/server" ]
     }, "views\\server", function(global, module, exports, require, window) {
         ((function() {
@@ -1964,7 +1964,7 @@
         })).call(this);
     });
     register({
-        views: [ "../../templates/login" ]
+        views: [ "../templates/login" ]
     }, "templates", function(global, module, exports, require, window) {
         var jade = require("../lib/vendor/jade_runtime");
         module.exports = function anonymous(locals, attrs, escape, rethrow) {
@@ -2106,14 +2106,14 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
-            BaseView = require("../base");
-            ServerView = require("../server");
+            BaseView = require("./base");
+            ServerView = require("./server");
             module.exports = LoginView = function(_super) {
                 __extends(LoginView, _super);
                 function LoginView() {
                     LoginView.__super__.constructor.apply(this, arguments);
                 }
-                LoginView.prototype.template = require("../../templates/login");
+                LoginView.prototype.template = require("../templates/login");
                 LoginView.prototype.events = {
                     "keypress input": "login"
                 };
@@ -2159,7 +2159,7 @@
         })).call(this);
     });
     register({
-        "": [ "../lib/compatibility" ]
+        "": [ "./lib/compatibility" ]
     }, "lib", function(global, module, exports, require, window) {
         ((function() {
             jQuery.fn.animationPlayState = function(state) {
@@ -2178,7 +2178,7 @@
         })).call(this);
     });
     register({
-        "": [ "../lib/sync" ]
+        "": [ "./lib/sync" ]
     }, "lib", function(global, module, exports, require, window) {
         ((function() {
             var Database, Field, Table, create_model, delete_model, read_collection, update_model;
@@ -2308,8 +2308,8 @@
             };
             LoginView = require("./views/login");
             ServerView = require("./views/server");
-            require("../lib/compatibility");
-            require("../lib/sync");
+            require("./lib/compatibility");
+            require("./lib/sync");
             socket_request = function(request, request_data, callback) {
                 var data;
                 if (callback == null) callback = request_data;

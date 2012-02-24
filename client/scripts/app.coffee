@@ -2,10 +2,10 @@ LoginView  = require './views/login'
 ServerView = require './views/server'
 
 # Include extra jQuery compatbility plugins
-require '../lib/compatibility'
+require './lib/compatibility'
 
 # Include the Backbone.sync override
-require '../lib/sync'
+require './lib/sync'
 
 ###
 The `socket_request` protocol provides an abstraction above typical send/receive
