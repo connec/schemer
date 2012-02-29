@@ -1956,8 +1956,12 @@
                 }
                 ServerView.prototype.template = require("../../templates/server");
                 ServerView.prototype.initialize = function() {
+                    var _this = this;
                     this.graph = new Graph(this.$("#graph"));
-                    return this.graph.toolbox = this.toolbox = new Toolbox(this.$("#toolbox"), this.graph);
+                    this.graph.toolbox = this.toolbox = new Toolbox(this.$("#toolbox"), this.graph);
+                    return $(global).resize(function() {
+                        return _this.graph.tree.refresh();
+                    });
                 };
                 return ServerView;
             }(BaseView);

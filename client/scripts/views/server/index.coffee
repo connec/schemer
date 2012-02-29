@@ -19,3 +19,6 @@ module.exports = class ServerView extends BaseView
     # Construct the components of the view
     @graph         = new Graph @$('#graph')
     @graph.toolbox = @toolbox = new Toolbox @$('#toolbox'), @graph
+    
+    # Refresh the graph on window resize
+    $(global).resize => @graph.tree.refresh()
