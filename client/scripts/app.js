@@ -1768,12 +1768,48 @@
                     var _this = this;
                     this.tree = global.tree = new Tree(this.el);
                     this.tree.bind("node:click", this.node_click.bind(this));
+                    this.tree.bind("node:add", this.set_label_text.bind(this));
                     return socket.request("get_server", function(err, server) {
                         if (err) return on_error(err);
                         _this.tree.set_root(new Server(server));
                         _this.tree.set_centre(_this.tree.root);
                         _this.tree.refresh();
+                        _this.setup_panning();
                         return _this.node_click(_this.tree.root);
+                    });
+                };
+                GraphView.prototype.setup_panning = function() {
+                    var start_graph, start_mouse, _this = this;
+                    start_mouse = start_graph = false;
+                    this.el.mousemove(function(e) {
+                        if (!(start_mouse || start_graph)) return;
+                        return _this.tree.$wrapper.css({
+                            left: start_graph.x - start_mouse.x + e.clientX,
+                            top: start_graph.y - start_mouse.y + e.clientY
+                        });
+                    });
+                    this.el.mousedown(function(e) {
+                        if (!$(e.target).is(_this.el)) return;
+                        start_mouse = {
+                            x: e.clientX,
+                            y: e.clientY
+                        };
+                        start_graph = {
+                            x: _this.tree.$wrapper.position().left,
+                            y: _this.tree.$wrapper.position().top
+                        };
+                        return _this.tree.$wrapper.css({
+                            left: start_graph.x,
+                            top: start_graph.y,
+                            right: "auto"
+                        });
+                    });
+                    return this.el.mouseup(function() {
+                        start_mouse = start_graph = false;
+                        return _this.tree.$wrapper.css({
+                            left: "auto",
+                            right: _this.el.width() - _this.tree.$wrapper.width() - _this.tree.$wrapper.position().left
+                        });
                     });
                 };
                 GraphView.prototype.node_click = function(node) {
@@ -1849,11 +1885,12 @@
                     $("#overlay").show().fadeTo(250, .5);
                     return callback(done);
                 };
-                GraphView.prototype.set_label_text = function($label) {
-                    var label, ratio;
+                GraphView.prototype.set_label_text = function(node) {
+                    var $label, label, ratio;
+                    $label = node.$label;
                     label = $label.text();
-                    this.$ruler.text(label);
-                    if ((ratio = 140 / this.$ruler.width()) < 1) {
+                    $("#ruler").text(label);
+                    if ((ratio = 140 / $("#ruler").width()) < 1) {
                         $label.attr({
                             title: label
                         });

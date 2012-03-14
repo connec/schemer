@@ -18,6 +18,7 @@ module.exports = class GraphView extends Backbone.View
     # Construct the Tree representing the visualisation
     @tree = global.tree = new Tree @el
     @tree.bind 'node:click', @node_click.bind @
+    @tree.bind 'node:add', @set_label_text.bind @
     
     # Load the server details
     socket.request 'get_server', (err, server) =>
@@ -28,8 +29,38 @@ module.exports = class GraphView extends Backbone.View
       @tree.set_centre @tree.root
       @tree.refresh()
       
-      # Simulate a click on the root to display the database
+      # Set up panning
+      @setup_panning()
+      
+      # Simulate a click on the root to display the databases
       @node_click @tree.root
+  
+  ###
+  Enables panning of the graph.
+  ###
+  setup_panning: ->
+    start_mouse = start_graph = false
+    
+    @el.mousemove (e) =>
+      return unless start_mouse or start_graph
+      @tree.$wrapper.css
+        left: start_graph.x - start_mouse.x + e.clientX
+        top:  start_graph.y - start_mouse.y + e.clientY
+    
+    @el.mousedown (e) =>
+      return unless $(e.target).is @el
+      start_mouse = x: e.clientX, y: e.clientY
+      start_graph = x: @tree.$wrapper.position().left, y: @tree.$wrapper.position().top
+      @tree.$wrapper.css
+        left:   start_graph.x
+        top:    start_graph.y
+        right:  'auto'
+    
+    @el.mouseup =>
+      start_mouse = start_graph = false
+      @tree.$wrapper.css
+        left: 'auto'
+        right: @el.width() - @tree.$wrapper.width() - @tree.$wrapper.position().left
   
   ###
   Handler for clicks on nodes.
@@ -112,10 +143,11 @@ module.exports = class GraphView extends Backbone.View
   ###
   Shorten a node's name inline with the node width.
   ###
-  set_label_text: ($label) ->
-    label = $label.text()
-    @$ruler.text label
-    if (ratio = 140 / @$ruler.width()) < 1
+  set_label_text: (node) ->
+    $label = node.$label
+    label  = $label.text()
+    $('#ruler').text label
+    if (ratio = 140 / $('#ruler').width()) < 1
       $label.attr title: label
       $label.text label.slice(0, Math.floor(ratio * label.length) - 3) + '...'
     else
