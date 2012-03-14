@@ -391,8 +391,9 @@
                     });
                 };
                 Section.prototype.drop = function() {
-                    var parent, _this = this;
+                    var parent, sibling, _ref, _this = this;
                     parent = this.node.parent;
+                    sibling = (_ref = this.node.previous_sibling()) != null ? _ref : this.node.next_sibling();
                     if (!this.node.id) {
                         parent.get("children").remove(this.node);
                         return this.toolbox.graph.node_click(parent);
@@ -400,11 +401,12 @@
                     return this.toolbox.graph.transition(function(done) {
                         return _this.node.destroy({
                             complete: done,
-                            success: function() {
-                                return _this.toolbox.graph.node_click(parent);
-                            },
                             error: function(_, err) {
                                 return on_error(err);
+                            },
+                            success: function() {
+                                if (sibling) return _this.toolbox.graph.node_click(sibling);
+                                return _this.toolbox.graph.node_click(parent);
                             }
                         });
                     });
@@ -432,8 +434,7 @@
                     var _this = this;
                     return this.toolbox.graph.transition(function(done) {
                         _this.node.close();
-                        _this.node.tree.animate();
-                        return _this.node.tree.bind_once("anim:after", function() {
+                        _this.node.tree.bind_once("anim:after", function() {
                             return _this.node.save({}, {
                                 success: function(model) {
                                     _this.node.$elem.removeClass("changed");
@@ -462,6 +463,7 @@
                                 }
                             });
                         });
+                        return _this.node.tree.animate();
                     });
                 };
                 return Section;
@@ -1780,10 +1782,11 @@
                     start_mouse = start_graph = false;
                     this.el.mousemove(function(e) {
                         if (!(start_mouse || start_graph)) return;
-                        return _this.tree.$wrapper.css({
+                        _this.tree.$wrapper.css({
                             left: start_graph.x - start_mouse.x + e.clientX,
                             top: start_graph.y - start_mouse.y + e.clientY
                         });
+                        return _this.tree.previous_styles = "{}";
                     });
                     this.el.mousedown(function(e) {
                         if (!$(e.target).is(_this.el)) return;

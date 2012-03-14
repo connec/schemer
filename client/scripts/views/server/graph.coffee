@@ -46,6 +46,10 @@ module.exports = class GraphView extends Backbone.View
       @tree.$wrapper.css
         left: start_graph.x - start_mouse.x + e.clientX
         top:  start_graph.y - start_mouse.y + e.clientY
+      
+      # This is a little hacky... invalidate the tree's previous style to force
+      # the next animation to occur in order to allow recentreing
+      @tree.previous_styles = '{}'
     
     @el.mousedown (e) =>
       return unless $(e.target).is @el

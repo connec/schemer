@@ -35,7 +35,8 @@ module.exports = class Section extends Backbone.View
   Handles the dropping of this node.
   ###
   drop: ->
-    parent = @node.parent
+    parent  = @node.parent
+    sibling = @node.previous_sibling() ? @node.next_sibling()
     unless @node.id
       parent.get('children').remove @node
       return @toolbox.graph.node_click parent
@@ -43,8 +44,10 @@ module.exports = class Section extends Backbone.View
     @toolbox.graph.transition (done) =>
       @node.destroy
         complete: done
-        success:  => @toolbox.graph.node_click parent
         error:    (_, err) -> on_error err
+        success:  =>
+          return @toolbox.graph.node_click sibling if sibling
+          return @toolbox.graph.node_click parent
   
   ###
   Handles the renaming of this node.
@@ -77,7 +80,6 @@ module.exports = class Section extends Backbone.View
     @toolbox.graph.transition (done) =>
       # Remove the children, as they may need to be replaced with new IDs
       @node.close()
-      @node.tree.animate()
       @node.tree.bind_once 'anim:after', =>
         @node.save {},
           success: (model) =>
@@ -99,3 +101,6 @@ module.exports = class Section extends Backbone.View
             @node.set name: @node.id[(@node.id.lastIndexOf('/') + 1)..]
             on_error err
             done()
+      
+      # Kick off the animation
+      @node.tree.animate()
