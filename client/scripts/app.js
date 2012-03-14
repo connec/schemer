@@ -122,6 +122,35 @@
                         });
                     }
                 }
+                NodeModel.prototype.open = function(callback) {
+                    if (!this.constructor.Child) {
+                        return typeof callback === "function" ? callback() : void 0;
+                    }
+                    return this.refresh(callback);
+                };
+                NodeModel.prototype.close = function() {
+                    if (!this.constructor.Child) return;
+                    return this.get("children").remove(this.children.slice(0));
+                };
+                NodeModel.prototype.refresh = function(callback) {
+                    var _this = this;
+                    if (!this.$elem.hasClass("open")) {
+                        return typeof callback === "function" ? callback() : void 0;
+                    }
+                    this.get("children").fetch({
+                        add: true,
+                        error: function(_, err) {
+                            return typeof callback === "function" ? callback(err) : void 0;
+                        },
+                        success: function() {
+                            return async.forEach(_this.children, function(child, sync) {
+                                return child.refresh(sync);
+                            }, function() {
+                                return typeof callback === "function" ? callback() : void 0;
+                            });
+                        }
+                    });
+                };
                 return NodeModel;
             }(Backbone.Model);
             Children = function(_super) {
@@ -133,6 +162,26 @@
                     this.bind("add", this.on_add.bind(this));
                     this.bind("remove", this.on_remove.bind(this));
                 }
+                Children.prototype.fetch = function(options) {
+                    var initial_ids, k, success, _this = this;
+                    initial_ids = {};
+                    for (k in this._byId) {
+                        initial_ids[k] = null;
+                    }
+                    success = options.success;
+                    options.success = function(_, updated) {
+                        var id, model, _i, _len;
+                        for (_i = 0, _len = updated.length; _i < _len; _i++) {
+                            model = updated[_i];
+                            delete initial_ids[model.id];
+                        }
+                        for (id in initial_ids) {
+                            _this.remove(_this._byId[id]);
+                        }
+                        return success.apply(null, arguments);
+                    };
+                    return Children.__super__.fetch.apply(this, arguments);
+                };
                 Children.prototype.comparator = function(model) {
                     return model.get("name");
                 };
@@ -346,7 +395,7 @@
                     parent = this.node.parent;
                     if (!this.node.id) {
                         parent.get("children").remove(this.node);
-                        this.toolbox.graph.node_click(parent);
+                        return this.toolbox.graph.node_click(parent);
                     }
                     return this.toolbox.graph.transition(function(done) {
                         return _this.node.destroy({
@@ -1728,81 +1777,75 @@
                     });
                 };
                 GraphView.prototype.node_click = function(node) {
-                    var child, direction, grandchild, grandchildren, i, ids, path, sibling, siblings, _i, _j, _len, _len2, _ref, _ref2, _ref3, _this = this;
-                    if (node.$elem.hasClass("selected")) return;
-                    if (parseInt(node.$elem.attr("data-depth")) < parseInt(this.$(".selected").attr("data-depth"))) {
-                        direction = "up";
-                    } else {
-                        direction = "down";
-                    }
-                    this.tree.$wrapper.find(".in-path, .selected").removeClass("in-path selected");
-                    node.$elem.addClass("selected");
-                    _ref = [ node ].concat(node.parents());
-                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                        path = _ref[_i];
-                        path.$elem.addClass("in-path");
-                    }
-                    this.tree.unbind("node:click", this.node_click);
-                    if (direction === "down") {
-                        siblings = (_ref2 = node.parent) != null ? _ref2.get("children") : void 0;
-                        if (!(node instanceof Field)) {
-                            _ref3 = node.siblings();
-                            for (_j = 0, _len2 = _ref3.length; _j < _len2; _j++) {
-                                sibling = _ref3[_j];
-                                siblings.remove(sibling);
-                            }
-                        }
-                    } else {
-                        ids = function() {
-                            var _k, _len3, _len4, _ref4, _ref5, _results;
-                            _ref4 = node.children;
-                            _results = [];
-                            for (_k = 0, _len3 = _ref4.length; _k < _len3; _k++) {
-                                child = _ref4[_k];
-                                grandchildren = child.get("children");
-                                _ref5 = child.children.slice(0);
-                                for (i = 0, _len4 = _ref5.length; i < _len4; i++) {
-                                    grandchild = _ref5[i];
-                                    grandchildren.remove(grandchild);
-                                }
-                                _results.push(child.id);
-                            }
-                            return _results;
-                        }();
-                    }
-                    this.tree.set_centre(node);
-                    this.tree.animate();
-                    return this.tree.bind_once("anim:after", function() {
-                        if (!(node.id && node.get("children"))) {
-                            _this.tree.bind("node:click", _this.node_click.bind(_this));
-                            _this.toolbox.update(node);
-                            return;
-                        }
-                        return _this.transition(function(done) {
-                            return node.get("children").fetch({
-                                add: true,
-                                complete: done,
-                                success: function() {
-                                    _this.toolbox.update(node);
-                                    _this.tree.animate();
-                                    return _this.tree.bind_once("anim:after", function() {
-                                        return _this.tree.bind("node:click", _this.node_click.bind(_this));
-                                    });
-                                },
-                                error: function(_, err) {
-                                    return on_error(err);
-                                }
+                    var child, _i, _len, _ref, _this = this;
+                    if (!node.$elem.hasClass("open")) {
+                        this.node_select(node);
+                        this.transition(function(done) {
+                            return async.series([ function(sync) {
+                                _this.tree.bind_once("anim:after", sync);
+                                return _this.tree.animate();
+                            }, function(sync) {
+                                return node.open(sync);
+                            }, function(sync) {
+                                this.tree.bind_once("anim:after", sync);
+                                return this.tree.animate();
+                            } ], function(err) {
+                                if (err) on_error(err);
+                                return done();
                             });
                         });
+                        return;
+                    }
+                    if (node !== this.tree.root) {
+                        node.close();
+                        node.$elem.removeClass("selected open");
+                        if (this.tree.$wrapper.find(".selected").length === 0) {
+                            this.node_select(node.parent);
+                        }
+                        this.transition(function(done) {
+                            _this.tree.bind_once("anim:after", function() {
+                                if (_this.tree.$wrapper.find(".selected").length === 0) {
+                                    _this.node_select(node.parent);
+                                }
+                                _this.tree.bind_once("anim:after", done);
+                                return _this.tree.animate();
+                            });
+                            return _this.tree.animate();
+                        });
+                        return;
+                    }
+                    this.tree.$wrapper.find(".open").removeClass("open");
+                    this.node_select(node);
+                    _ref = node.children;
+                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                        child = _ref[_i];
+                        child.close();
+                    }
+                    return this.transition(function(done) {
+                        _this.tree.bind_once("anim:after", done);
+                        return _this.tree.animate();
                     });
                 };
+                GraphView.prototype.node_select = function(node) {
+                    this.tree.$wrapper.find(".selected").each(function() {
+                        if (!($(this).data("node").children.length > 0)) {
+                            $(this).removeClass("open");
+                        }
+                        return $(this).removeClass("selected");
+                    });
+                    node.$elem.addClass("selected open");
+                    this.toolbox.update(node);
+                    return this.tree.set_centre(node);
+                };
                 GraphView.prototype.transition = function(callback) {
-                    var done;
+                    var done, _this = this;
                     done = function() {
                         return $("#overlay").fadeTo(250, 0, function() {
-                            return $(this).hide();
+                            _this.tree.bind("node:click", _this.node_click.bind(_this));
+                            return $("#overlay").hide();
                         });
                     };
+                    this.tree.unbind("node:click");
                     $("#overlay").show().fadeTo(250, .5);
                     return callback(done);
                 };
@@ -1960,7 +2003,23 @@
                     this.graph = new Graph(this.$("#graph"));
                     this.graph.toolbox = this.toolbox = new Toolbox(this.$("#toolbox"), this.graph);
                     return $(global).resize(function() {
+                        _this.resize();
                         return _this.graph.tree.refresh();
+                    });
+                };
+                ServerView.prototype.render = function() {
+                    ServerView.__super__.render.apply(this, arguments);
+                    return this.resize();
+                };
+                ServerView.prototype.resize = function() {
+                    var toolbox_width;
+                    toolbox_width = this.toolbox.el.outerWidth(true);
+                    this.graph.el.css({
+                        marginLeft: toolbox_width
+                    });
+                    return this.$("#overlay").css({
+                        left: toolbox_width,
+                        width: $(global).innerWidth() - toolbox_width
                     });
                 };
                 return ServerView;

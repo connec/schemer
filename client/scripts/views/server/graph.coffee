@@ -20,7 +20,6 @@ module.exports = class GraphView extends Backbone.View
     @tree.bind 'node:click', @node_click.bind @
     
     # Load the server details
-    
     socket.request 'get_server', (err, server) =>
       return on_error err if err
       
@@ -36,62 +35,77 @@ module.exports = class GraphView extends Backbone.View
   Handler for clicks on nodes.
   ###
   node_click: (node) ->
-    # Do nothing if this bode is already selected
-    return if node.$elem.hasClass 'selected'
-    
-    # We're moving down if this node's parent is selected
-    if parseInt(node.$elem.attr 'data-depth') < parseInt(@$('.selected').attr 'data-depth')
-      direction = 'up'
-    else
-      direction = 'down'
-    
-    # Apply styles to the new selected node and its parents
-    @tree.$wrapper.find('.in-path, .selected').removeClass 'in-path selected'
-    node.$elem.addClass 'selected'
-    path.$elem.addClass 'in-path' for path in [node].concat node.parents()
-    
-    # Remove the click handler until we're done animating
-    @tree.unbind 'node:click', @node_click
-    
-    # Execute the methods for the direction we're moving in
-    if direction is 'down'
-      # Remove all siblings and centre the view on the node
-      siblings = node.parent?.get 'children'
-      siblings.remove sibling for sibling in node.siblings() unless node instanceof Field
-    else
-      # Remove all grand-children
-      ids = for child in node.children
-        grandchildren = child.get 'children'
-        grandchildren.remove grandchild for grandchild, i in child.children[0..]
-        child.id
-    
-    @tree.set_centre node
-    @tree.animate()
-    
-    # After the animation add all the children to the visualisation
-    @tree.bind_once 'anim:after', =>
-      # Finish now unless this model has been loaded from the database and has children
-      unless node.id and node.get 'children'
-        @tree.bind 'node:click', @node_click.bind @
-        @toolbox.update node
-        return
+    # If the node is not open, select it and open it
+    unless node.$elem.hasClass 'open'
+      @node_select node
       @transition (done) =>
-        node.get('children').fetch
-          add: true
-          complete: done
-          success: =>
-            @toolbox.update node
+        async.series [
+          (sync) =>
+            # Animate the selection of the node
+            @tree.bind_once 'anim:after', sync
             @tree.animate()
-            @tree.bind_once 'anim:after', => @tree.bind 'node:click', @node_click.bind @
-          error: (_, err) =>
-            on_error err
+          (sync) ->
+            # Open the node from the database
+            node.open sync
+          (sync) ->
+            # Animate the opening of the node
+            @tree.bind_once 'anim:after', sync
+            @tree.animate()
+        ], (err) ->
+          on_error err if err
+          done()
+      return
+    
+    # If the node is not the root
+    unless node == @tree.root
+      # Close the node
+      node.close()
+      node.$elem.removeClass 'selected open'
+      
+      # Select the parent node if there is now no selected node
+      @node_select node.parent if @tree.$wrapper.find('.selected').length is 0
+      
+      @transition (done) =>
+        @tree.bind_once 'anim:after', =>
+          # Need another check for selected nodes now that nodes have been
+          # removed
+          @node_select node.parent if @tree.$wrapper.find('.selected').length is 0
+          @tree.bind_once 'anim:after', done
+          @tree.animate()
+        @tree.animate()
+      return
+    
+    # Select the root, and clear all other open nodes
+    @tree.$wrapper.find('.open').removeClass 'open'
+    @node_select node
+    child.close() for child in node.children
+    @transition (done) =>
+      @tree.bind_once 'anim:after', done
+      @tree.animate()
+  
+  ###
+  Selects the given node.
+  ###
+  node_select: (node) ->
+    # Remove current selection
+    @tree.$wrapper.find('.selected').each ->
+      $(@).removeClass 'open' unless $(@).data('node').children.length > 0
+      $(@).removeClass 'selected'
+    
+    # Apply the selection and centre the graph
+    node.$elem.addClass 'selected open'
+    @toolbox.update node
+    @tree.set_centre node
   
   ###
   Handles the dimming of the screen during a transition.
   ###
   transition: (callback) ->
-    done = ->
-      $('#overlay').fadeTo 250, 0, -> $(@).hide()
+    done = =>
+      $('#overlay').fadeTo 250, 0, =>
+        @tree.bind 'node:click', @node_click.bind @
+        $('#overlay').hide()
+    @tree.unbind 'node:click'
     $('#overlay').show().fadeTo 250, 0.5
     callback done
   

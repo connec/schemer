@@ -21,4 +21,25 @@ module.exports = class ServerView extends BaseView
     @graph.toolbox = @toolbox = new Toolbox @$('#toolbox'), @graph
     
     # Refresh the graph on window resize
-    $(global).resize => @graph.tree.refresh()
+    $(global).resize =>
+      @resize()
+      @graph.tree.refresh()
+  
+  ###
+  Extend BaseView::render to resize the graph and overlay.
+  ###
+  render: ->
+    super
+    @resize()
+  
+  ###
+  Resizes the graph to fill the space left by the toolbox.
+  ###
+  resize: ->
+    toolbox_width = @toolbox.el.outerWidth true
+    
+    @graph.el.css marginLeft: toolbox_width
+    
+    @$('#overlay').css
+      left:  toolbox_width
+      width: $(global).innerWidth() - toolbox_width

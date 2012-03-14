@@ -38,7 +38,7 @@ module.exports = class Section extends Backbone.View
     parent = @node.parent
     unless @node.id
       parent.get('children').remove @node
-      @toolbox.graph.node_click parent
+      return @toolbox.graph.node_click parent
     
     @toolbox.graph.transition (done) =>
       @node.destroy
