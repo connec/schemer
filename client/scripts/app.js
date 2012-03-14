@@ -2014,10 +2014,7 @@
                 ServerView.prototype.resize = function() {
                     var toolbox_width;
                     toolbox_width = this.toolbox.el.outerWidth(true);
-                    this.graph.el.css({
-                        marginLeft: toolbox_width
-                    });
-                    return this.$("#overlay").css({
+                    return this.$("#overlay, #graph").css({
                         left: toolbox_width,
                         width: $(global).innerWidth() - toolbox_width
                     });
