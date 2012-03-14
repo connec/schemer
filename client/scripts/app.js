@@ -431,13 +431,7 @@
                 Section.prototype.update = function() {
                     var _this = this;
                     return this.toolbox.graph.transition(function(done) {
-                        var child, children, _i, _len, _ref;
-                        children = _this.node.get("children");
-                        _ref = _this.node.children;
-                        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                            child = _ref[_i];
-                            children.remove(child);
-                        }
+                        _this.node.close();
                         _this.node.tree.animate();
                         return _this.node.tree.bind_once("anim:after", function() {
                             return _this.node.save({}, {
@@ -460,8 +454,11 @@
                                     });
                                 },
                                 error: function(_, err) {
-                                    done();
-                                    return on_error(err);
+                                    _this.node.set({
+                                        name: _this.node.id.slice(_this.node.id.lastIndexOf("/") + 1)
+                                    });
+                                    on_error(err);
+                                    return done();
                                 }
                             });
                         });

@@ -76,8 +76,7 @@ module.exports = class Section extends Backbone.View
   update: ->
     @toolbox.graph.transition (done) =>
       # Remove the children, as they may need to be replaced with new IDs
-      children = @node.get 'children'
-      children.remove child for child in @node.children
+      @node.close()
       @node.tree.animate()
       @node.tree.bind_once 'anim:after', =>
         @node.save {},
@@ -95,6 +94,8 @@ module.exports = class Section extends Backbone.View
               complete: done
               success: => @node.tree.animate()
               error: (_, err) -> on_error err
-          error: (_, err) ->
-            done()
+          error: (_, err) =>
+            # Change the name back based on the ID
+            @node.set name: @node.id[(@node.id.lastIndexOf('/') + 1)..]
             on_error err
+            done()
