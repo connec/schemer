@@ -69,7 +69,7 @@ module.exports = class GraphView extends Backbone.View
   ###
   Handler for clicks on nodes.
   ###
-  node_click: (node) ->
+  node_click: (node, callback) ->
     # If the node is not open, select it and open it
     unless node.$elem.hasClass 'open'
       @node_select node
@@ -88,6 +88,7 @@ module.exports = class GraphView extends Backbone.View
             @tree.animate()
         ], (err) ->
           on_error err if err
+          callback?()
           done()
       return
     
@@ -105,7 +106,9 @@ module.exports = class GraphView extends Backbone.View
           # Need another check for selected nodes now that nodes have been
           # removed
           @node_select node.parent if @tree.$wrapper.find('.selected').length is 0
-          @tree.bind_once 'anim:after', done
+          @tree.bind_once 'anim:after', ->
+            callback?()
+            done()
           @tree.animate()
         @tree.animate()
       return
@@ -115,7 +118,9 @@ module.exports = class GraphView extends Backbone.View
     @node_select node
     child.close() for child in node.children
     @transition (done) =>
-      @tree.bind_once 'anim:after', done
+      @tree.bind_once 'anim:after', ->
+        callback?()
+        done()
       @tree.animate()
   
   ###

@@ -26,9 +26,9 @@ module.exports = class Section extends Backbone.View
         complete: done
         success: (model) =>
           @node.get('children').add model
-          @node.tree.animate()
           @node.tree.bind_once 'anim:after', =>
-            @toolbox.graph.node_click model
+            @toolbox.graph.node_click model, => @toolbox.get_section(model).rename()
+          @node.tree.animate()
         error: (_, err) -> on_error err
   
   ###
@@ -94,7 +94,9 @@ module.exports = class Section extends Backbone.View
             model.get('children').fetch
               add: true
               complete: done
-              success: => @node.tree.animate()
+              success: =>
+                @node.parent.get('children').sort()
+                @node.tree.animate()
               error: (_, err) -> on_error err
           error: (_, err) =>
             # Change the name back based on the ID

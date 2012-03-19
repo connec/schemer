@@ -119,3 +119,14 @@ class Children extends Backbone.Collection
   on_remove: (model) ->
     # Remove the model from the tree
     @parent.tree.remove_node model if model in @parent.children
+  
+  ###
+  Extend `sort` to also sort the `children` array.
+  ###
+  sort: ->
+    @parent.children.sort (a, b) =>
+      [a, b] = [a, b].map (_) => @comparator(_).toLowerCase()
+      return -1 if a < b
+      return +1 if a > b
+      return 0
+    super

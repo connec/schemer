@@ -80,7 +80,8 @@
         })).call(this);
     });
     register({
-        models: [ "./node_model" ]
+        models: [ "./node_model" ],
+        "views\\server\\toolbox": [ "../../../models/node_model" ]
     }, "models", function(global, module, exports, require, window) {
         ((function() {
             var Children, NodeModel, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
@@ -205,6 +206,19 @@
                     if (__indexOf.call(this.parent.children, model) >= 0) {
                         return this.parent.tree.remove_node(model);
                     }
+                };
+                Children.prototype.sort = function() {
+                    var _this = this;
+                    this.parent.children.sort(function(a, b) {
+                        var _ref;
+                        _ref = [ a, b ].map(function(_) {
+                            return _this.comparator(_).toLowerCase();
+                        }), a = _ref[0], b = _ref[1];
+                        if (a < b) return -1;
+                        if (a > b) return +1;
+                        return 0;
+                    });
+                    return Children.__super__.sort.apply(this, arguments);
                 };
                 return Children;
             }(Backbone.Collection);
@@ -379,10 +393,12 @@
                             complete: done,
                             success: function(model) {
                                 _this.node.get("children").add(model);
-                                _this.node.tree.animate();
-                                return _this.node.tree.bind_once("anim:after", function() {
-                                    return _this.toolbox.graph.node_click(model);
+                                _this.node.tree.bind_once("anim:after", function() {
+                                    return _this.toolbox.graph.node_click(model, function() {
+                                        return _this.toolbox.get_section(model).rename();
+                                    });
                                 });
+                                return _this.node.tree.animate();
                             },
                             error: function(_, err) {
                                 return on_error(err);
@@ -446,6 +462,7 @@
                                         add: true,
                                         complete: done,
                                         success: function() {
+                                            _this.node.parent.get("children").sort();
                                             return _this.node.tree.animate();
                                         },
                                         error: function(_, err) {
@@ -1672,7 +1689,7 @@
         "views\\server": [ "./toolbox" ]
     }, "views\\server\\toolbox", function(global, module, exports, require, window) {
         ((function() {
-            var Database, Field, Sections, Server, Table, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Database, Field, NodeModel, Sections, Server, Table, ToolboxView, get_key, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1686,6 +1703,7 @@
             };
             Database = require("../../../models/database");
             Field = require("../../../models/field");
+            NodeModel = require("../../../models/node_model");
             Server = require("../../../models/server");
             Table = require("../../../models/table");
             Sections = {};
@@ -1693,6 +1711,18 @@
             Sections.field = require("./field");
             Sections.server = require("./server");
             Sections.table = require("./table");
+            get_key = function(Klass) {
+                switch (Klass) {
+                  case Server:
+                    return "server";
+                  case Database:
+                    return "database";
+                  case Table:
+                    return "table";
+                  case Field:
+                    return "field";
+                }
+            };
             module.exports = ToolboxView = function(_super) {
                 __extends(ToolboxView, _super);
                 function ToolboxView(el, graph) {
@@ -1703,19 +1733,7 @@
                 ToolboxView.prototype.update = function(node) {
                     var k, nodes;
                     nodes = {};
-                    switch (node.constructor) {
-                      case Server:
-                        nodes.server = node;
-                        break;
-                      case Database:
-                        nodes.database = node;
-                        break;
-                      case Table:
-                        nodes.table = node;
-                        break;
-                      case Field:
-                        nodes.field = node;
-                    }
+                    nodes[get_key(node.constructor)] = node;
                     if (nodes.field) nodes.table = nodes.field.parent;
                     if (nodes.table) nodes.database = nodes.table.parent;
                     if (nodes.database) nodes.server = nodes.database.parent;
@@ -1740,6 +1758,10 @@
                         }
                     }
                     return _results;
+                };
+                ToolboxView.prototype.get_section = function(key) {
+                    if (key instanceof NodeModel) key = get_key(key.constructor);
+                    return this.sections[key];
                 };
                 return ToolboxView;
             }(Backbone.View);
@@ -1820,7 +1842,7 @@
                         });
                     });
                 };
-                GraphView.prototype.node_click = function(node) {
+                GraphView.prototype.node_click = function(node, callback) {
                     var child, _i, _len, _ref, _this = this;
                     if (!node.$elem.hasClass("open")) {
                         this.node_select(node);
@@ -1835,6 +1857,7 @@
                                 return this.tree.animate();
                             } ], function(err) {
                                 if (err) on_error(err);
+                                if (typeof callback === "function") callback();
                                 return done();
                             });
                         });
@@ -1851,7 +1874,10 @@
                                 if (_this.tree.$wrapper.find(".selected").length === 0) {
                                     _this.node_select(node.parent);
                                 }
-                                _this.tree.bind_once("anim:after", done);
+                                _this.tree.bind_once("anim:after", function() {
+                                    if (typeof callback === "function") callback();
+                                    return done();
+                                });
                                 return _this.tree.animate();
                             });
                             return _this.tree.animate();
@@ -1866,7 +1892,10 @@
                         child.close();
                     }
                     return this.transition(function(done) {
-                        _this.tree.bind_once("anim:after", done);
+                        _this.tree.bind_once("anim:after", function() {
+                            if (typeof callback === "function") callback();
+                            return done();
+                        });
                         return _this.tree.animate();
                     });
                 };
