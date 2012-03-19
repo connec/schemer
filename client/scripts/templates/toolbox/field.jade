@@ -7,7 +7,7 @@ section.field
       a.rename Rename
   h2 Properties
   ul.properties
-    li.type
+    li.type(title='Type')
       - var types      = {}
       - types.Boolean  = ['tinyint', 1]
       - types.Date     = ['date']
@@ -29,18 +29,18 @@ section.field
             .text('#{node.get("type")}')
             .appendTo $('select.type')
           option.append '(#{node.get("length")})' if option.attr 'data-length'
-    li.default
+    li.default(title='Default')
       input.default(type='text', value=node.get('default'), disabled=node.get('default') === null)
       input.default_toggle(type='checkbox', checked=node.get('default') !== null)
-    li.key
+    li.key(title='Key')
       select.key
         option(value='') None
         option(value='index', selected=node.get('key') == 'index') Index
         option(value='primary', selected=node.get('key') == 'primary') Primary
         option(value='unique', selected=node.get('key') == 'unique') Unique
-    li.null
+    li.null(title='Null')
       input.null(type='checkbox', checked=node.get('null'))
-    li.ai
+    li.ai(title='Auto Increment')
       input.ai(type='checkbox', checked=node.get('ai'))
     li.save
       input.save(type='button', value='Save')
