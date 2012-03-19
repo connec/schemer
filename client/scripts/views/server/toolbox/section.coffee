@@ -35,19 +35,19 @@ module.exports = class Section extends Backbone.View
   Handles the dropping of this node.
   ###
   drop: ->
-    parent  = @node.parent
-    sibling = @node.previous_sibling() ? @node.next_sibling()
-    unless @node.id
+    parent      = @node.parent
+    next_of_kin = @node.previous_sibling() ? @node.next_sibling() ? parent
+    
+    if not @node.id
       parent.get('children').remove @node
-      return @toolbox.graph.node_click parent
+      return @toolbox.graph.node_click next_of_kin
     
     @toolbox.graph.transition (done) =>
       @node.destroy
         complete: done
         error:    (_, err) -> on_error err
         success:  =>
-          return @toolbox.graph.node_click sibling if sibling
-          return @toolbox.graph.node_click parent
+          return @toolbox.graph.node_click next_of_kin
   
   ###
   Handles the renaming of this node.

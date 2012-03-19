@@ -391,12 +391,12 @@
                     });
                 };
                 Section.prototype.drop = function() {
-                    var parent, sibling, _ref, _this = this;
+                    var next_of_kin, parent, _ref, _ref2, _this = this;
                     parent = this.node.parent;
-                    sibling = (_ref = this.node.previous_sibling()) != null ? _ref : this.node.next_sibling();
+                    next_of_kin = (_ref = (_ref2 = this.node.previous_sibling()) != null ? _ref2 : this.node.next_sibling()) != null ? _ref : parent;
                     if (!this.node.id) {
                         parent.get("children").remove(this.node);
-                        return this.toolbox.graph.node_click(parent);
+                        return this.toolbox.graph.node_click(next_of_kin);
                     }
                     return this.toolbox.graph.transition(function(done) {
                         return _this.node.destroy({
@@ -405,8 +405,7 @@
                                 return on_error(err);
                             },
                             success: function() {
-                                if (sibling) return _this.toolbox.graph.node_click(sibling);
-                                return _this.toolbox.graph.node_click(parent);
+                                return _this.toolbox.graph.node_click(next_of_kin);
                             }
                         });
                     });
