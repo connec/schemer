@@ -101,9 +101,9 @@ class Children extends Backbone.Collection
   ###
   add: (models) ->
     if Array.isArray models
-      models = models.filter (model) => model.id not of @_byId
+      models = models.filter (model) => model.id? and model.id not of @_byId
     else
-      return if models.id of @_byId
+      return if models.id? and models.id of @_byId
     super
   
   ###

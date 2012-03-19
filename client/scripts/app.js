@@ -189,10 +189,10 @@
                     var _this = this;
                     if (Array.isArray(models)) {
                         models = models.filter(function(model) {
-                            return !(model.id in _this._byId);
+                            return model.id != null && !(model.id in _this._byId);
                         });
                     } else {
-                        if (models.id in this._byId) return;
+                        if (models.id != null && models.id in this._byId) return;
                     }
                     return Children.__super__.add.apply(this, arguments);
                 };
@@ -850,6 +850,7 @@
                     });
                     buf.push("<li");
                     buf.push(attrs({
+                        title: "Type",
                         "class": "type"
                     }));
                     buf.push(">");
@@ -1008,6 +1009,7 @@
                     });
                     buf.push("<li");
                     buf.push(attrs({
+                        title: "Default",
                         "class": "default"
                     }));
                     buf.push(">");
@@ -1049,6 +1051,7 @@
                     });
                     buf.push("<li");
                     buf.push(attrs({
+                        title: "Key",
                         "class": "key"
                     }));
                     buf.push(">");
@@ -1148,6 +1151,7 @@
                     });
                     buf.push("<li");
                     buf.push(attrs({
+                        title: "Null",
                         "class": "null"
                     }));
                     buf.push(">");
@@ -1176,6 +1180,7 @@
                     });
                     buf.push("<li");
                     buf.push(attrs({
+                        title: "Auto Increment",
                         "class": "ai"
                     }));
                     buf.push(">");
@@ -1270,6 +1275,7 @@
                     "change input.null": "change",
                     "change input.ai": "change",
                     "change input.default_toggle": "toggle_default",
+                    "click input.default": "toggle_default",
                     "click input.save": "update",
                     "click .drop": "drop",
                     "click .rename": "rename"
@@ -1309,10 +1315,13 @@
                     return this.node.unbind("change", on_change);
                 };
                 FieldSection.prototype.toggle_default = function(e) {
-                    if ($(e.target).is(":checked")) {
+                    var $target;
+                    console.log($target = $(e.target));
+                    if ($target.is(":checked")) {
                         this.node.$elem.addClass("changed");
                         return this.$("input.default").removeAttr("disabled").focus();
                     } else {
+                        if ($target.is(".default")) if (!$target.is(":disabled")) return;
                         this.node.set({
                             "default": null
                         });
@@ -1651,10 +1660,10 @@
                     child.parent = this.node;
                     child.$elem.addClass("changed");
                     this.node.get("children").add(child);
-                    this.node.tree.animate();
-                    return this.node.tree.bind_once("anim:after", function() {
+                    this.node.tree.bind_once("anim:after", function() {
                         return _this.toolbox.graph.node_click(child);
                     });
+                    return this.node.tree.animate();
                 };
                 return TableSection;
             }(Section);

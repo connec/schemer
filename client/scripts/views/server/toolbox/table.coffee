@@ -40,6 +40,6 @@ module.exports = class TableSection extends Section
     
     # Add the node to the tree
     @node.get('children').add child
-    @node.tree.animate()
     @node.tree.bind_once 'anim:after', =>
       @toolbox.graph.node_click child
+    @node.tree.animate()

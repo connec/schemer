@@ -19,6 +19,7 @@ module.exports = class FieldSection extends Section
     'change input.ai':             'change'
     
     'change input.default_toggle': 'toggle_default'
+    'click input.default':         'toggle_default'
     
     'click input.save':            'update'
     
@@ -47,10 +48,13 @@ module.exports = class FieldSection extends Section
   Handles the toggling of the default checkbox.
   ###
   toggle_default: (e) ->
-    if $(e.target).is ':checked'
+    console.log $target = $(e.target);
+    if $target.is ':checked'
       @node.$elem.addClass 'changed'
       @$('input.default').removeAttr('disabled').focus()
     else
+      if $target.is '.default'
+        return unless $target.is ':disabled'
       @node.set default: null
       @node.$elem.addClass 'changed'
       @$('input.default').val('').attr disabled: 'disabled'
