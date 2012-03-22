@@ -20,7 +20,7 @@ module.exports = class TableSection extends Section
   Adds a child node (Field) to this node.
   ###
   add_child: ->
-    @toolbox.graph.transition (done) =>
+    @toolbox.server_view.transition (done) =>
       # Find the first free 'new field (i)'
       i = 0
       for child in @node.children
@@ -43,5 +43,5 @@ module.exports = class TableSection extends Section
       @node.get('children').add child
       @node.tree.bind_once 'anim:after', =>
         done()
-        @toolbox.graph.node_click child
+        @toolbox.server_view.graph.node_click child, => @toolbox.get_section('field').rename()
       @node.tree.animate()

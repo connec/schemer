@@ -386,7 +386,7 @@
                 Section.prototype.add_child = function() {
                     var Child, _this = this;
                     Child = this.node.constructor.Child;
-                    return this.toolbox.graph.transition(function(done) {
+                    return this.toolbox.server_view.transition(function(done) {
                         var child;
                         child = new Child;
                         child.parent = _this.node;
@@ -395,7 +395,7 @@
                             success: function(model) {
                                 _this.node.get("children").add(model);
                                 _this.node.tree.bind_once("anim:after", function() {
-                                    return _this.toolbox.graph.node_click(model, function() {
+                                    return _this.toolbox.server_view.graph.node_click(model, function() {
                                         return _this.toolbox.get_section(model).rename();
                                     });
                                 });
@@ -413,16 +413,16 @@
                     next_of_kin = (_ref = (_ref2 = this.node.previous_sibling()) != null ? _ref2 : this.node.next_sibling()) != null ? _ref : parent;
                     if (!this.node.id) {
                         parent.get("children").remove(this.node);
-                        return this.toolbox.graph.node_click(next_of_kin);
+                        return this.toolbox.server_view.graph.node_click(next_of_kin);
                     }
-                    return this.toolbox.graph.transition(function(done) {
+                    return this.toolbox.server_view.transition(function(done) {
                         return _this.node.destroy({
                             complete: done,
                             error: function(_, err) {
                                 return on_error(err);
                             },
                             success: function() {
-                                return _this.toolbox.graph.node_click(next_of_kin);
+                                return _this.toolbox.server_view.graph.node_click(next_of_kin);
                             }
                         });
                     });
@@ -448,7 +448,7 @@
                 };
                 Section.prototype.update = function() {
                     var _this = this;
-                    return this.toolbox.graph.transition(function(done) {
+                    return this.toolbox.server_view.transition(function(done) {
                         _this.node.close();
                         _this.node.tree.bind_once("anim:after", function() {
                             return _this.node.save({}, {
@@ -1657,7 +1657,7 @@
                 };
                 TableSection.prototype.add_child = function() {
                     var _this = this;
-                    return this.toolbox.graph.transition(function(done) {
+                    return this.toolbox.server_view.transition(function(done) {
                         var child, i, match, _i, _len, _ref;
                         i = 0;
                         _ref = _this.node.children;
@@ -1681,7 +1681,9 @@
                         _this.node.get("children").add(child);
                         _this.node.tree.bind_once("anim:after", function() {
                             done();
-                            return _this.toolbox.graph.node_click(child);
+                            return _this.toolbox.server_view.graph.node_click(child, function() {
+                                return _this.toolbox.get_section("field").rename();
+                            });
                         });
                         return _this.node.tree.animate();
                     });
@@ -1730,9 +1732,9 @@
             };
             module.exports = ToolboxView = function(_super) {
                 __extends(ToolboxView, _super);
-                function ToolboxView(el, graph) {
+                function ToolboxView(server_view, el) {
+                    this.server_view = server_view;
                     this.el = el;
-                    this.graph = graph;
                     ToolboxView.__super__.constructor.call(this);
                 }
                 ToolboxView.prototype.update = function(node) {
@@ -1795,7 +1797,8 @@
             ToolboxView = require("./toolbox");
             module.exports = GraphView = function(_super) {
                 __extends(GraphView, _super);
-                function GraphView(el) {
+                function GraphView(server_view, el) {
+                    this.server_view = server_view;
                     this.el = el;
                     GraphView.__super__.constructor.call(this);
                 }
@@ -1852,7 +1855,7 @@
                     var child, _i, _len, _ref, _this = this;
                     if (!node.$elem.hasClass("open")) {
                         this.node_select(node);
-                        this.transition(function(done) {
+                        this.server_view.transition(function(done) {
                             return async.series([ function(sync) {
                                 var sibling, _i, _len, _ref;
                                 if (node instanceof Database) {
@@ -1888,7 +1891,7 @@
                         } else {
                             this.node_select(node);
                         }
-                        this.transition(function(done) {
+                        this.server_view.transition(function(done) {
                             _this.tree.bind_once("anim:after", function() {
                                 if (typeof callback === "function") callback();
                                 return done();
@@ -1904,7 +1907,7 @@
                         child = _ref[_i];
                         child.close();
                     }
-                    return this.transition(function(done) {
+                    return this.server_view.transition(function(done) {
                         return node.refresh(function() {
                             _this.tree.bind_once("anim:after", function() {
                                 if (typeof callback === "function") callback();
@@ -1922,20 +1925,8 @@
                         return $(this).removeClass("selected");
                     });
                     node.$elem.addClass("selected open");
-                    this.toolbox.update(node);
+                    this.server_view.toolbox.update(node);
                     return this.tree.set_centre(node);
-                };
-                GraphView.prototype.transition = function(callback) {
-                    var done, _this = this;
-                    done = function() {
-                        return $("#overlay").fadeTo(250, 0, function() {
-                            _this.tree.bind("node:click", _this.node_click.bind(_this));
-                            return $("#overlay").hide();
-                        });
-                    };
-                    this.tree.unbind("node:click");
-                    $("#overlay").show().fadeTo(250, .5);
-                    return callback(done);
                 };
                 GraphView.prototype.set_label_text = function(node) {
                     var $label, label, ratio;
@@ -2089,8 +2080,8 @@
                 ServerView.prototype.template = require("../../templates/server");
                 ServerView.prototype.initialize = function() {
                     var _this = this;
-                    this.graph = new Graph(this.$("#graph"));
-                    this.graph.toolbox = this.toolbox = new Toolbox(this.$("#toolbox"), this.graph);
+                    this.graph = new Graph(this, this.$("#graph"));
+                    this.toolbox = new Toolbox(this, this.$("#toolbox"));
                     return $(global).resize(function() {
                         _this.resize();
                         return _this.graph.tree.refresh();
@@ -2111,6 +2102,16 @@
                         left: 0,
                         width: $(global).innerWidth() + toolbox_width
                     });
+                };
+                ServerView.prototype.transition = function(callback) {
+                    var done, _this = this;
+                    done = function() {
+                        return _this.$("#overlay").fadeTo(250, 0, function() {
+                            return _this.$("#overlay").hide();
+                        });
+                    };
+                    this.$("#overlay").show().fadeTo(250, .5);
+                    return callback(done);
                 };
                 return ServerView;
             }(BaseView);

@@ -17,8 +17,8 @@ module.exports = class ServerView extends BaseView
   ###
   initialize: ->
     # Construct the components of the view
-    @graph         = new Graph @$('#graph')
-    @graph.toolbox = @toolbox = new Toolbox @$('#toolbox'), @graph
+    @graph   = new Graph   @, @$('#graph')
+    @toolbox = new Toolbox @, @$('#toolbox')
     
     # Refresh the graph on window resize
     $(global).resize =>
@@ -44,3 +44,13 @@ module.exports = class ServerView extends BaseView
     @$('#overlay').css
       left:  0
       width: $(global).innerWidth() + toolbox_width
+  
+  ###
+  Handles the blocking of the interface during a transition.
+  ###
+  transition: (callback) ->
+    done = =>
+      @$('#overlay').fadeTo 250, 0, =>
+        @$('#overlay').hide()
+    @$('#overlay').show().fadeTo 250, 0.5
+    callback done

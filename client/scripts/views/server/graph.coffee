@@ -9,7 +9,7 @@ module.exports = class GraphView extends Backbone.View
   ###
   Constructs the view.
   ###
-  constructor: (@el) ->
+  constructor: (@server_view, @el) ->
     super()
   
   ###
@@ -74,7 +74,7 @@ module.exports = class GraphView extends Backbone.View
     # If the node is not open, select it and open it
     unless node.$elem.hasClass 'open'
       @node_select node
-      @transition (done) =>
+      @server_view.transition (done) =>
         async.series [
           (sync) =>
             # Animate the selection of the node
@@ -109,7 +109,7 @@ module.exports = class GraphView extends Backbone.View
         # Node must be open, just select it
         @node_select node
       
-      @transition (done) =>
+      @server_view.transition (done) =>
         @tree.bind_once 'anim:after', =>
           callback?()
           done()
@@ -121,7 +121,7 @@ module.exports = class GraphView extends Backbone.View
     @tree.$wrapper.find('.open, .selected').removeClass 'open selected'
     @node_select node
     child.close() for child in node.children
-    @transition (done) =>
+    @server_view.transition (done) =>
       node.refresh =>
         @tree.bind_once 'anim:after', ->
           callback?()
@@ -139,20 +139,8 @@ module.exports = class GraphView extends Backbone.View
     
     # Apply the selection and centre the graph
     node.$elem.addClass 'selected open'
-    @toolbox.update node
+    @server_view.toolbox.update node
     @tree.set_centre node
-  
-  ###
-  Handles the dimming of the screen during a transition.
-  ###
-  transition: (callback) ->
-    done = =>
-      $('#overlay').fadeTo 250, 0, =>
-        @tree.bind 'node:click', @node_click.bind @
-        $('#overlay').hide()
-    @tree.unbind 'node:click'
-    $('#overlay').show().fadeTo 250, 0.5
-    callback done
   
   ###
   Shorten a node's name inline with the node width.

@@ -19,7 +19,7 @@ module.exports = class Section extends Backbone.View
   add_child: ->
     Child = @node.constructor.Child
     
-    @toolbox.graph.transition (done) =>
+    @toolbox.server_view.transition (done) =>
       child        = new Child
       child.parent = @node
       child.save {},
@@ -27,7 +27,7 @@ module.exports = class Section extends Backbone.View
         success: (model) =>
           @node.get('children').add model
           @node.tree.bind_once 'anim:after', =>
-            @toolbox.graph.node_click model, => @toolbox.get_section(model).rename()
+            @toolbox.server_view.graph.node_click model, => @toolbox.get_section(model).rename()
           @node.tree.animate()
         error: (_, err) -> on_error err
   
@@ -40,14 +40,14 @@ module.exports = class Section extends Backbone.View
     
     if not @node.id
       parent.get('children').remove @node
-      return @toolbox.graph.node_click next_of_kin
+      return @toolbox.server_view.graph.node_click next_of_kin
     
-    @toolbox.graph.transition (done) =>
+    @toolbox.server_view.transition (done) =>
       @node.destroy
         complete: done
         error:    (_, err) -> on_error err
         success:  =>
-          return @toolbox.graph.node_click next_of_kin
+          return @toolbox.server_view.graph.node_click next_of_kin
   
   ###
   Handles the renaming of this node.
@@ -77,7 +77,7 @@ module.exports = class Section extends Backbone.View
   Handles the updating of this node.
   ###
   update: ->
-    @toolbox.graph.transition (done) =>
+    @toolbox.server_view.transition (done) =>
       # Remove the children, as they may need to be replaced with new IDs
       @node.close()
       @node.tree.bind_once 'anim:after', =>
