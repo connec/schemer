@@ -225,8 +225,8 @@
         })).call(this);
     });
     register({
-        "views\\server": [ "../../models/field" ],
         models: [ "./field" ],
+        "views\\server": [ "../../models/field" ],
         "views\\server\\toolbox": [ "../../../models/field" ],
         lib: [ "../models/field" ]
     }, "models", function(global, module, exports, require, window) {
@@ -295,6 +295,7 @@
         })).call(this);
     });
     register({
+        "views\\server": [ "../../models/database" ],
         models: [ "./database" ],
         "views\\server\\toolbox": [ "../../../models/database" ],
         lib: [ "../models/database" ]
@@ -1771,7 +1772,7 @@
         "views\\server": [ "./graph" ]
     }, "views\\server", function(global, module, exports, require, window) {
         ((function() {
-            var Field, GraphView, Server, Table, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
+            var Database, Field, GraphView, Server, Table, ToolboxView, __hasProp = Object.prototype.hasOwnProperty, __extends = function(child, parent) {
                 for (var key in parent) {
                     if (__hasProp.call(parent, key)) child[key] = parent[key];
                 }
@@ -1783,6 +1784,7 @@
                 child.__super__ = parent.prototype;
                 return child;
             };
+            Database = require("../../models/database");
             Field = require("../../models/field");
             Server = require("../../models/server");
             Table = require("../../models/table");
@@ -1848,6 +1850,16 @@
                         this.node_select(node);
                         this.transition(function(done) {
                             return async.series([ function(sync) {
+                                var sibling, _i, _len, _ref;
+                                if (!(node instanceof Database)) return sync();
+                                _ref = node.siblings();
+                                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                                    sibling = _ref[_i];
+                                    node.parent.get("children").remove(sibling);
+                                }
+                                _this.tree.bind_once("anim:after", sync);
+                                return _this.tree.animate();
+                            }, function(sync) {
                                 _this.tree.bind_once("anim:after", sync);
                                 return _this.tree.animate();
                             }, function(sync) {
@@ -1880,7 +1892,7 @@
                         });
                         return;
                     }
-                    this.tree.$wrapper.find(".open").removeClass("open");
+                    this.tree.$wrapper.find(".open, .selected").removeClass("open selected");
                     this.node_select(node);
                     _ref = node.children;
                     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -1888,11 +1900,13 @@
                         child.close();
                     }
                     return this.transition(function(done) {
-                        _this.tree.bind_once("anim:after", function() {
-                            if (typeof callback === "function") callback();
-                            return done();
+                        return node.refresh(function() {
+                            _this.tree.bind_once("anim:after", function() {
+                                if (typeof callback === "function") callback();
+                                return done();
+                            });
+                            return _this.tree.animate();
                         });
-                        return _this.tree.animate();
                     });
                 };
                 GraphView.prototype.node_select = function(node) {

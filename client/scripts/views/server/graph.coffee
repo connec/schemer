@@ -1,3 +1,4 @@
+Database    = require '../../models/database'
 Field       = require '../../models/field'
 Server      = require '../../models/server'
 Table       = require '../../models/table'
@@ -76,6 +77,12 @@ module.exports = class GraphView extends Backbone.View
       @transition (done) =>
         async.series [
           (sync) =>
+            # If the node being selected is a database, prune the siblings
+            return sync() unless node instanceof Database
+            node.parent.get('children').remove sibling for sibling in node.siblings()
+            @tree.bind_once 'anim:after', sync
+            @tree.animate()
+          (sync) =>
             # Animate the selection of the node
             @tree.bind_once 'anim:after', sync
             @tree.animate()
@@ -112,14 +119,15 @@ module.exports = class GraphView extends Backbone.View
       return
     
     # Select the root, and clear all other open nodes
-    @tree.$wrapper.find('.open').removeClass 'open'
+    @tree.$wrapper.find('.open, .selected').removeClass 'open selected'
     @node_select node
     child.close() for child in node.children
     @transition (done) =>
-      @tree.bind_once 'anim:after', ->
-        callback?()
-        done()
-      @tree.animate()
+      node.refresh =>
+        @tree.bind_once 'anim:after', ->
+          callback?()
+          done()
+        @tree.animate()
   
   ###
   Selects the given node.
