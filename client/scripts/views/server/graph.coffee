@@ -94,23 +94,21 @@ module.exports = class GraphView extends Backbone.View
     
     # If the node is not the root
     unless node == @tree.root
-      # Close the node
-      node.close()
-      node.$elem.removeClass 'selected open'
-      
-      # Select the parent node if there is now no selected node
-      @node_select node.parent if @tree.$wrapper.find('.selected').length is 0
+      if node.$elem.is '.selected'
+        # Close the node, and select the parent
+        node.close()
+        node.$elem.removeClass 'selected open'
+        @node_select node.parent
+      else
+        # Node must be open, just select it
+        @node_select node
       
       @transition (done) =>
         @tree.bind_once 'anim:after', =>
-          # Need another check for selected nodes now that nodes have been
-          # removed
-          @node_select node.parent if @tree.$wrapper.find('.selected').length is 0
-          @tree.bind_once 'anim:after', ->
-            callback?()
-            done()
-          @tree.animate()
+          callback?()
+          done()
         @tree.animate()
+      
       return
     
     # Select the root, and clear all other open nodes

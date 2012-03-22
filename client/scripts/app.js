@@ -1864,21 +1864,17 @@
                         return;
                     }
                     if (node !== this.tree.root) {
-                        node.close();
-                        node.$elem.removeClass("selected open");
-                        if (this.tree.$wrapper.find(".selected").length === 0) {
+                        if (node.$elem.is(".selected")) {
+                            node.close();
+                            node.$elem.removeClass("selected open");
                             this.node_select(node.parent);
+                        } else {
+                            this.node_select(node);
                         }
                         this.transition(function(done) {
                             _this.tree.bind_once("anim:after", function() {
-                                if (_this.tree.$wrapper.find(".selected").length === 0) {
-                                    _this.node_select(node.parent);
-                                }
-                                _this.tree.bind_once("anim:after", function() {
-                                    if (typeof callback === "function") callback();
-                                    return done();
-                                });
-                                return _this.tree.animate();
+                                if (typeof callback === "function") callback();
+                                return done();
                             });
                             return _this.tree.animate();
                         });
