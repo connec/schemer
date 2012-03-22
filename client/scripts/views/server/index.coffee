@@ -37,6 +37,10 @@ module.exports = class ServerView extends BaseView
   ###
   resize: ->
     toolbox_width = @toolbox.el.outerWidth true
-    @$('#overlay, #graph').css
+    @$('#graph').css
       left:  toolbox_width
       width: $(global).innerWidth() - toolbox_width
+    
+    @$('#overlay').css
+      left:  0
+      width: $(global).innerWidth() + toolbox_width

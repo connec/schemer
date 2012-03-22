@@ -1656,31 +1656,35 @@
                     "click .rename": "rename"
                 };
                 TableSection.prototype.add_child = function() {
-                    var child, i, match, _i, _len, _ref, _this = this;
-                    i = 0;
-                    _ref = this.node.children;
-                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                        child = _ref[_i];
-                        if ((match = child.get("name").match(/new field \((\d+)\)/i)) && parseInt(match[1]) > i) {
-                            i = match[1];
+                    var _this = this;
+                    return this.toolbox.graph.transition(function(done) {
+                        var child, i, match, _i, _len, _ref;
+                        i = 0;
+                        _ref = _this.node.children;
+                        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                            child = _ref[_i];
+                            if ((match = child.get("name").match(/new field \((\d+)\)/i)) && parseInt(match[1]) > i) {
+                                i = match[1];
+                            }
                         }
-                    }
-                    child = new Field({
-                        name: "new field (" + ++i + ")",
-                        type: "int",
-                        length: 11,
-                        "null": false,
-                        "default": null,
-                        ai: false,
-                        key: false
+                        child = new Field({
+                            name: "new field (" + ++i + ")",
+                            type: "int",
+                            length: 11,
+                            "null": false,
+                            "default": null,
+                            ai: false,
+                            key: false
+                        });
+                        child.parent = _this.node;
+                        child.$elem.addClass("changed");
+                        _this.node.get("children").add(child);
+                        _this.node.tree.bind_once("anim:after", function() {
+                            done();
+                            return _this.toolbox.graph.node_click(child);
+                        });
+                        return _this.node.tree.animate();
                     });
-                    child.parent = this.node;
-                    child.$elem.addClass("changed");
-                    this.node.get("children").add(child);
-                    this.node.tree.bind_once("anim:after", function() {
-                        return _this.toolbox.graph.node_click(child);
-                    });
-                    return this.node.tree.animate();
                 };
                 return TableSection;
             }(Section);
@@ -2099,9 +2103,13 @@
                 ServerView.prototype.resize = function() {
                     var toolbox_width;
                     toolbox_width = this.toolbox.el.outerWidth(true);
-                    return this.$("#overlay, #graph").css({
+                    this.$("#graph").css({
                         left: toolbox_width,
                         width: $(global).innerWidth() - toolbox_width
+                    });
+                    return this.$("#overlay").css({
+                        left: 0,
+                        width: $(global).innerWidth() + toolbox_width
                     });
                 };
                 return ServerView;
