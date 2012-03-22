@@ -1851,15 +1851,13 @@
                         this.transition(function(done) {
                             return async.series([ function(sync) {
                                 var sibling, _i, _len, _ref;
-                                if (!(node instanceof Database)) return sync();
-                                _ref = node.siblings();
-                                for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-                                    sibling = _ref[_i];
-                                    node.parent.get("children").remove(sibling);
+                                if (node instanceof Database) {
+                                    _ref = node.siblings();
+                                    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                                        sibling = _ref[_i];
+                                        node.parent.get("children").remove(sibling);
+                                    }
                                 }
-                                _this.tree.bind_once("anim:after", sync);
-                                return _this.tree.animate();
-                            }, function(sync) {
                                 _this.tree.bind_once("anim:after", sync);
                                 return _this.tree.animate();
                             }, function(sync) {
@@ -1877,6 +1875,9 @@
                     }
                     if (node !== this.tree.root) {
                         if (node.$elem.is(".selected")) {
+                            if (node.parent === this.tree.root) {
+                                return this.node_click(node.parent, callback);
+                            }
                             node.close();
                             node.$elem.removeClass("selected open");
                             this.node_select(node.parent);

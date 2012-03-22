@@ -77,13 +77,9 @@ module.exports = class GraphView extends Backbone.View
       @transition (done) =>
         async.series [
           (sync) =>
-            # If the node being selected is a database, prune the siblings
-            return sync() unless node instanceof Database
-            node.parent.get('children').remove sibling for sibling in node.siblings()
-            @tree.bind_once 'anim:after', sync
-            @tree.animate()
-          (sync) =>
             # Animate the selection of the node
+            if node instanceof Database
+              node.parent.get('children').remove sibling for sibling in node.siblings()
             @tree.bind_once 'anim:after', sync
             @tree.animate()
           (sync) ->
@@ -102,6 +98,9 @@ module.exports = class GraphView extends Backbone.View
     # If the node is not the root
     unless node == @tree.root
       if node.$elem.is '.selected'
+        # If the parent is the root, perform a click on the root instead
+        return @node_click node.parent, callback if node.parent == @tree.root
+        
         # Close the node, and select the parent
         node.close()
         node.$elem.removeClass 'selected open'
