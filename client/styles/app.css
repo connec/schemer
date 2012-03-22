@@ -252,13 +252,6 @@ body {
 #server #graph .wrapper .node.unsaved .label {
   font-weight: bold;
 }
-#server #graph .wrapper .node.open .label {
-  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #ff9), color-stop(1, #cc6));
-  background-image: -webkit-linear-gradient(top, #ff9 0%, #cc6 100%);
-  background-image: -moz-linear-gradient(top, #ff9 0%, #cc6 100%);
-  background-image: linear-gradient(top, #ff9 0%, #cc6 100%);
-  border-color: #cc6;
-}
 #server #graph .wrapper .node.open.selected .label {
   background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0, #9f9), color-stop(1, #6c6));
   background-image: -webkit-linear-gradient(top, #9f9 0%, #6c6 100%);
