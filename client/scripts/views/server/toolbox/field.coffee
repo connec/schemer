@@ -35,7 +35,10 @@ module.exports = class FieldSection extends Section
     
     $elem     = $(e.target)
     $selected = $elem.find ':selected'
-    if      $elem.hasClass 'type'    then @node.set type: $selected.attr('data-type'), length: $selected.attr('data-length')
+    if $elem.hasClass 'type'
+      if $selected.text() is 'Custom...'
+        $selected = @add_custom_type()
+      @node.set type: $selected.attr('data-type'), length: $selected.attr('data-length')
     else if $elem.hasClass 'default' then @node.set default: (if $elem.is(':disabled') then null else $elem.val())
     else if $elem.hasClass 'key'     then @node.set key: (if $elem.val() then $elem.val() else null)
     else if $elem.hasClass 'null'    then @node.set null: $elem.is ':checked'
@@ -58,3 +61,19 @@ module.exports = class FieldSection extends Section
       @node.set default: null
       @node.$elem.addClass 'changed'
       @$('input.default').val('').attr disabled: 'disabled'
+  
+  ###
+  Prompts for a custom type and adds it to the type select.
+  ###
+  add_custom_type: ->
+    both   = prompt "Enter a custom type in the form 'type(length)'"
+    type   = both
+    length = null
+    if match = type.match /(.*?)\((\d+)\)/
+      type   = match[1]
+      length = match[2]
+    
+    return $('<option/>')
+      .attr('data-type': type, 'data-length': length, selected: true)
+      .text(both)
+      .insertBefore(@$('select.type option:last'))

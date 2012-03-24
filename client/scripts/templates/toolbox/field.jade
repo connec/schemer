@@ -19,7 +19,10 @@ section.field
       - types.Time     = ['time']
       select.type
         each def, type in types
-          option(data-type=def[0], data-length=def[1], selected=node.get('type') == def[0])= type
+          option(data-type=def[0],
+            data-length=def[1],
+            selected=node.get('type') == def[0] && node.get('length') == def[1])= type
+        option Custom...
       :coffeescript
         # A nescessary evil to allow the creation of an option for types not
         # defined above
@@ -27,7 +30,7 @@ section.field
           option = $('<option/>')
             .attr(selected: true, 'data-type': '#{node.get("type")}', 'data-length': '#{node.get("length")}')
             .text('#{node.get("type")}')
-            .appendTo $('select.type')
+            .insertBefore $('select.type option:last')
           option.append '(#{node.get("length")})' if option.attr 'data-length'
     li.default(title='Default')
       input.default(type='text', value=node.get('default'), disabled=node.get('default') === null)

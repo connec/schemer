@@ -962,7 +962,7 @@
                                 buf.push(attrs({
                                     "data-type": def[0],
                                     "data-length": def[1],
-                                    selected: node.get("type") == def[0]
+                                    selected: node.get("type") == def[0] && node.get("length") == def[1]
                                 }));
                                 buf.push(">");
                                 var __val__ = type;
@@ -991,7 +991,7 @@
                                 buf.push(attrs({
                                     "data-type": def[0],
                                     "data-length": def[1],
-                                    selected: node.get("type") == def[0]
+                                    selected: node.get("type") == def[0] && node.get("length") == def[1]
                                 }));
                                 buf.push(">");
                                 var __val__ = type;
@@ -1008,20 +1008,32 @@
                         }
                     })).call(this);
                     __jade.shift();
+                    __jade.unshift({
+                        lineno: 23,
+                        filename: __jade[0].filename
+                    });
+                    buf.push("<option>Custom...");
+                    __jade.unshift({
+                        lineno: undefined,
+                        filename: __jade[0].filename
+                    });
+                    __jade.shift();
+                    buf.push("</option>");
+                    __jade.shift();
                     __jade.shift();
                     buf.push("</select>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 32,
+                        lineno: 33,
                         filename: __jade[0].filename
                     });
-                    buf.push("<script type=\"text/javascript\">\n(function() {\n  var option;\n\n  if (!$('select.type option[selected]').length) {\n    option = $('<option/>').attr({\n      selected: true,\n      'data-type': '" + escape((interp = node.get("type")) == null ? "" : interp) + "',\n      'data-length': '" + escape((interp = node.get("length")) == null ? "" : interp) + "'\n    }).text('" + escape((interp = node.get("type")) == null ? "" : interp) + "').appendTo($('select.type'));\n    if (option.attr('data-length')) option.append('(" + escape((interp = node.get("length")) == null ? "" : interp) + ")');\n  }\n\n}).call(this);\n</script>");
+                    buf.push("<script type=\"text/javascript\">\n(function() {\n  var option;\n\n  if (!$('select.type option[selected]').length) {\n    option = $('<option/>').attr({\n      selected: true,\n      'data-type': '" + escape((interp = node.get("type")) == null ? "" : interp) + "',\n      'data-length': '" + escape((interp = node.get("length")) == null ? "" : interp) + "'\n    }).text('" + escape((interp = node.get("type")) == null ? "" : interp) + "').insertBefore($('select.type option:last'));\n    if (option.attr('data-length')) option.append('(" + escape((interp = node.get("length")) == null ? "" : interp) + ")');\n  }\n\n}).call(this);\n</script>");
                     __jade.shift();
                     __jade.shift();
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 32,
+                        lineno: 33,
                         filename: __jade[0].filename
                     });
                     buf.push("<li");
@@ -1035,7 +1047,7 @@
                         filename: __jade[0].filename
                     });
                     __jade.unshift({
-                        lineno: 33,
+                        lineno: 34,
                         filename: __jade[0].filename
                     });
                     buf.push("<input");
@@ -1048,7 +1060,7 @@
                     buf.push("/>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 34,
+                        lineno: 35,
                         filename: __jade[0].filename
                     });
                     buf.push("<input");
@@ -1063,7 +1075,7 @@
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 35,
+                        lineno: 36,
                         filename: __jade[0].filename
                     });
                     buf.push("<li");
@@ -1077,7 +1089,7 @@
                         filename: __jade[0].filename
                     });
                     __jade.unshift({
-                        lineno: 36,
+                        lineno: 37,
                         filename: __jade[0].filename
                     });
                     buf.push("<select");
@@ -1090,7 +1102,7 @@
                         filename: __jade[0].filename
                     });
                     __jade.unshift({
-                        lineno: 37,
+                        lineno: 38,
                         filename: __jade[0].filename
                     });
                     buf.push("<option");
@@ -1106,7 +1118,7 @@
                     buf.push("</option>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 38,
+                        lineno: 39,
                         filename: __jade[0].filename
                     });
                     buf.push("<option");
@@ -1123,7 +1135,7 @@
                     buf.push("</option>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 39,
+                        lineno: 40,
                         filename: __jade[0].filename
                     });
                     buf.push("<option");
@@ -1140,7 +1152,7 @@
                     buf.push("</option>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 40,
+                        lineno: 41,
                         filename: __jade[0].filename
                     });
                     buf.push("<option");
@@ -1163,7 +1175,7 @@
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 41,
+                        lineno: 42,
                         filename: __jade[0].filename
                     });
                     buf.push("<li");
@@ -1177,7 +1189,7 @@
                         filename: __jade[0].filename
                     });
                     __jade.unshift({
-                        lineno: 42,
+                        lineno: 43,
                         filename: __jade[0].filename
                     });
                     buf.push("<input");
@@ -1192,7 +1204,7 @@
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 43,
+                        lineno: 44,
                         filename: __jade[0].filename
                     });
                     buf.push("<li");
@@ -1206,7 +1218,7 @@
                         filename: __jade[0].filename
                     });
                     __jade.unshift({
-                        lineno: 44,
+                        lineno: 45,
                         filename: __jade[0].filename
                     });
                     buf.push("<input");
@@ -1221,7 +1233,7 @@
                     buf.push("</li>");
                     __jade.shift();
                     __jade.unshift({
-                        lineno: 45,
+                        lineno: 46,
                         filename: __jade[0].filename
                     });
                     buf.push("<li");
@@ -1234,7 +1246,7 @@
                         filename: __jade[0].filename
                     });
                     __jade.unshift({
-                        lineno: 46,
+                        lineno: 47,
                         filename: __jade[0].filename
                     });
                     buf.push("<input");
@@ -1306,6 +1318,7 @@
                     $elem = $(e.target);
                     $selected = $elem.find(":selected");
                     if ($elem.hasClass("type")) {
+                        if ($selected.text() === "Custom...") $selected = this.add_custom_type();
                         this.node.set({
                             type: $selected.attr("data-type"),
                             length: $selected.attr("data-length")
@@ -1347,6 +1360,21 @@
                             disabled: "disabled"
                         });
                     }
+                };
+                FieldSection.prototype.add_custom_type = function() {
+                    var both, length, match, type;
+                    both = prompt("Enter a custom type in the form 'type(length)'");
+                    type = both;
+                    length = null;
+                    if (match = type.match(/(.*?)\((\d+)\)/)) {
+                        type = match[1];
+                        length = match[2];
+                    }
+                    return $("<option/>").attr({
+                        "data-type": type,
+                        "data-length": length,
+                        selected: true
+                    }).text(both).insertBefore(this.$("select.type option:last"));
                 };
                 return FieldSection;
             }(Section);
