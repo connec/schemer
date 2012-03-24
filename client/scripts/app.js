@@ -110,19 +110,19 @@
                     NodeModel.prototype[k] = v;
                 }
                 function NodeModel(properties) {
-                    var _this = this;
                     if (properties == null) properties = {};
                     NodeModel.__super__.constructor.call(this, properties);
                     Tree.Node.call(this, this.get("name"));
-                    this.bind("change:name", function() {
-                        return _this.$label.text(_this.get("name"));
-                    });
+                    this.bind("change:name", this.set_label.bind(this));
                     if (this.constructor.Child) {
                         this.set({
                             children: new Children(this)
                         });
                     }
                 }
+                NodeModel.prototype.set_label = function() {
+                    return this.$label.text(this.get("name"));
+                };
                 NodeModel.prototype.open = function(callback) {
                     if (!this.constructor.Child) {
                         return typeof callback === "function" ? callback() : void 0;
@@ -437,7 +437,7 @@
                         _this.node.set({
                             name: new_name
                         });
-                        if (old_name === new_name) return;
+                        if (old_name === new_name) return _this.node.set_label();
                         if (_this.node.id) return _this.update();
                     };
                     this.node.$label.html("");

@@ -16,10 +16,16 @@ module.exports = class NodeModel extends Backbone.Model
     Tree.Node.call @, @get 'name'
     
     # Bind model events
-    @bind 'change:name', => @$label.text @get 'name'
+    @bind 'change:name', @set_label.bind @
     
     # Create a collection for children
     @set children: new Children @ if @constructor.Child
+  
+  ###
+  Sets the label of the node based on the name attribute of the model.
+  ###
+  set_label: ->
+    @$label.text @get 'name'
   
   ###
   Opens this node's subtree by aquiring children from the database.

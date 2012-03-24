@@ -60,7 +60,10 @@ module.exports = class Section extends Backbone.View
       old_name = @node.get 'name'
       new_name = $input.val().toLowerCase()
       @node.set name: new_name
-      return if old_name == new_name
+      
+      # Change events won't be fired if the name hasn't actually changed, so we
+      # need to manually force the label to update
+      return @node.set_label() if old_name == new_name
       
       @update() if @node.id
     
