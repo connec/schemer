@@ -281,7 +281,7 @@ body {
   left: 0;
   top: 0;
   z-index: 10;
-  width: 250px;
+  width: 150px;
   height: 100%;
   background-color: #eee;
   border-right: 1px solid #ccc;
@@ -350,23 +350,23 @@ body {
   background-image: url("../images/type-icon.png");
 }
 #toolbox section ul.properties li > * {
-  width: 210px;
+  width: 110px;
   font: 10pt 'Lucida Sans Unicode', 'Lucida Sans', Lucida, sans-serif;
 }
 #toolbox section ul.properties li > *.default {
-  width: 190px;
+  width: 89px;
 }
 #toolbox section ul.properties li > *.default_toggle {
   position: relative;
-  left: 2px;
+  left: 1px;
   top: 1px;
   width: 13px;
   margin: 0;
   padding: 0;
 }
 #toolbox section ul.properties li > *.save {
-  width: 100px;
-  margin-left: 55px;
+  width: 60px;
+  margin-left: 25px;
 }
 @-moz-keyframes rotate_clockwise {
   0% {
