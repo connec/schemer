@@ -19,7 +19,7 @@ module.exports = class GraphView extends Backbone.View
     # Construct the Tree representing the visualisation
     @tree = global.tree = new Tree @el
     @tree.bind 'node:click', @node_click.bind @
-    @tree.bind 'node:add', @set_label_text.bind @
+    @tree.bind 'node:add', ({$label}) => @server_view.truncate $label
     
     # Load the server details
     socket.request 'get_server', (err, server) =>
@@ -141,16 +141,3 @@ module.exports = class GraphView extends Backbone.View
     node.$elem.addClass 'selected open'
     @server_view.toolbox.update node
     @tree.set_centre node
-  
-  ###
-  Shorten a node's name inline with the node width.
-  ###
-  set_label_text: (node) ->
-    $label = node.$label
-    label  = $label.text()
-    $('#ruler').text label
-    if (ratio = 140 / $('#ruler').width()) < 1
-      $label.attr title: label
-      $label.text label.slice(0, Math.floor(ratio * label.length) - 3) + '...'
-    else
-      $label.text label

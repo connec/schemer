@@ -12,7 +12,7 @@ Sections.table    = require './table'
 
 ###
 Gets the key (server/database/table/field) for the given class without relying
-on `name`.
+on `Function#name`.
 ###
 get_key = (Klass) ->
   switch Klass
@@ -52,6 +52,9 @@ module.exports = class ToolboxView extends Backbone.View
     @el.html ''
     for k in ['field', 'table', 'database', 'server']
       @el.append @sections[k].render().fadeTo(0, 0).fadeTo(250, 1) if @sections[k]
+    
+    # Truncate the headings in case they are too big
+    @$('h1').each (i, h1) => @server_view.truncate $(h1)
   
   ###
   Gets the section for the given key.

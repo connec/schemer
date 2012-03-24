@@ -1752,19 +1752,18 @@
                     return this.render();
                 };
                 ToolboxView.prototype.render = function() {
-                    var k, _i, _len, _ref, _results;
+                    var k, _i, _len, _ref, _this = this;
                     this.el.html("");
                     _ref = [ "field", "table", "database", "server" ];
-                    _results = [];
                     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                         k = _ref[_i];
                         if (this.sections[k]) {
-                            _results.push(this.el.append(this.sections[k].render().fadeTo(0, 0).fadeTo(250, 1)));
-                        } else {
-                            _results.push(void 0);
+                            this.el.append(this.sections[k].render().fadeTo(0, 0).fadeTo(250, 1));
                         }
                     }
-                    return _results;
+                    return this.$("h1").each(function(i, h1) {
+                        return _this.server_view.truncate($(h1));
+                    });
                 };
                 ToolboxView.prototype.get_section = function(key) {
                     if (key instanceof NodeModel) key = get_key(key.constructor);
@@ -1806,7 +1805,11 @@
                     var _this = this;
                     this.tree = global.tree = new Tree(this.el);
                     this.tree.bind("node:click", this.node_click.bind(this));
-                    this.tree.bind("node:add", this.set_label_text.bind(this));
+                    this.tree.bind("node:add", function(_arg) {
+                        var $label;
+                        $label = _arg.$label;
+                        return _this.server_view.truncate($label);
+                    });
                     return socket.request("get_server", function(err, server) {
                         if (err) return on_error(err);
                         _this.tree.set_root(new Server(server));
@@ -1927,20 +1930,6 @@
                     node.$elem.addClass("selected open");
                     this.server_view.toolbox.update(node);
                     return this.tree.set_centre(node);
-                };
-                GraphView.prototype.set_label_text = function(node) {
-                    var $label, label, ratio;
-                    $label = node.$label;
-                    label = $label.text();
-                    $("#ruler").text(label);
-                    if ((ratio = 140 / $("#ruler").width()) < 1) {
-                        $label.attr({
-                            title: label
-                        });
-                        return $label.text(label.slice(0, Math.floor(ratio * label.length) - 3) + "...");
-                    } else {
-                        return $label.text(label);
-                    }
                 };
                 return GraphView;
             }(Backbone.View);
@@ -2082,6 +2071,8 @@
                     var _this = this;
                     this.graph = new Graph(this, this.$("#graph"));
                     this.toolbox = new Toolbox(this, this.$("#toolbox"));
+                    this.$overlay = this.$("#overlay");
+                    this.$ruler = this.$("#ruler");
                     return $(global).resize(function() {
                         _this.resize();
                         return _this.graph.tree.refresh();
@@ -2094,11 +2085,11 @@
                 ServerView.prototype.resize = function() {
                     var toolbox_width;
                     toolbox_width = this.toolbox.el.outerWidth(true);
-                    this.$("#graph").css({
+                    this.graph.el.css({
                         left: toolbox_width,
                         width: $(global).innerWidth() - toolbox_width
                     });
-                    return this.$("#overlay").css({
+                    return this.$overlay.css({
                         left: 0,
                         width: $(global).innerWidth() + toolbox_width
                     });
@@ -2106,12 +2097,30 @@
                 ServerView.prototype.transition = function(callback) {
                     var done, _this = this;
                     done = function() {
-                        return _this.$("#overlay").fadeTo(250, 0, function() {
-                            return _this.$("#overlay").hide();
+                        return _this.$overlay.fadeTo(250, 0, function() {
+                            return $(this).hide();
                         });
                     };
-                    this.$("#overlay").show().fadeTo(250, .5);
+                    this.$overlay.show().fadeTo(250, .5);
                     return callback(done);
+                };
+                ServerView.prototype.truncate = function($elem) {
+                    $elem.removeAttr("title");
+                    this.$ruler.css({
+                        fontFamily: $elem.css("fontFamily"),
+                        fontSize: $elem.css("fontSize"),
+                        fontWeight: $elem.css("fontWeight")
+                    });
+                    this.$ruler.text($elem.text());
+                    if (!(this.$ruler.width() > $elem.width())) return;
+                    this.$ruler.append("...");
+                    while (this.$ruler.text() !== "..." && this.$ruler.width() > $elem.width()) {
+                        this.$ruler.text(this.$ruler.text().slice(0, -4) + "...");
+                    }
+                    $elem.attr({
+                        title: $elem.text()
+                    });
+                    return $elem.text(this.$ruler.text());
                 };
                 return ServerView;
             }(BaseView);
