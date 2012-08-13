@@ -20,4 +20,4 @@ A more useful 'bin' script is coming soon (tm).
 If you want to play around with the source code you can use `coffee watch.coffee` to monitor
 (non-dependency) code for changes and rebuild/reload client/server files as appropriate.
 
-![Schemer screenshot](http://connec.github.com/schemer/screenshot.png)
+![Schemer screenshot](http://connec.github.com/schemer/images/screenshot.png)
