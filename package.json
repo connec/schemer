@@ -1,20 +1,20 @@
 {
   "name"        : "schemer",
-  "description" : "My 4th year Honours project - a database management application",
+  "description" : "A lightweight database management tool.",
   "author"      : "Chris Connelly",
-  "version"     : "0.0.1",
+  "version"     : "0.0.2",
   "dependencies": {
-    "async":   ">= 0.1.15",
-    "connect": ">= 1.8.5",
-    "express": ">= 2.5.5",
-    "jade":    ">= 0.20.0",
-    "mysql":   ">= 0.9.5",
-    "zappa":   ">= 0.3.3"
+    "async":   "0.1.15",
+    "connect": "1.8.5",
+    "express": "2.5.5",
+    "jade":    "0.20.0",
+    "mysql":   "0.9.5",
+    "zappa":   "0.3.3"
   },
   "devDependencies": {
-    "coffee-script": ">= 1.2.0",
-    "nib":           ">= 0.3.1",
-    "squash":        ">= 0.0.9",
-    "stylus":        ">= 0.21.2"
+    "coffee-script": "1.2.0",
+    "nib":           "0.3.1",
+    "squash":        "0.0.9",
+    "stylus":        "0.21.2"
   }
 }
