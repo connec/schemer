@@ -1,8 +1,8 @@
 {
-  "name"        : "honours",
+  "name"        : "schemer",
   "description" : "My 4th year Honours project - a database management application",
   "author"      : "Chris Connelly",
-  "version"     : "0.0.1-pre",
+  "version"     : "0.0.1",
   "dependencies": {
     "async":   ">= 0.1.15",
     "connect": ">= 1.8.5",
