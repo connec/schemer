@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+var cs     = require('coffee-script');
+var fs     = require('fs');
+var path   = require('path');
+var server = path.join(path.dirname(fs.realpathSync(__filename)), '../server');
+
+require(server + '/zapp').start(3000);
