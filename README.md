@@ -24,4 +24,4 @@ MySQL server.
 If you want to play around with the source code you can use `coffee watch.coffee` to monitor
 (non-dependency) code for changes and rebuild/reload client/server files as appropriate.
 
-![Schemer screenshot](http://connec.github.com/schemer/images/screenshots/1.png)
+![Schemer screenshot](https://raw.githubusercontent.com/connec/schemer/gh-pages/images/screenshots/1.png)
